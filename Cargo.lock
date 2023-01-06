@@ -8497,6 +8497,7 @@ name = "turbo-tasks"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "auto-hash-map",
  "concurrent-queue",
  "dashmap",
@@ -9711,6 +9712,20 @@ checksum = "2209b78d1249f7e6f3293657c9779fe31ced465df091bbd433a1cf88e916ec55"
 dependencies = [
  "ctor 0.1.26",
  "version_check",
+]
+
+[[package]]
+name = "vc-test"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "tokio",
+ "turbo-tasks",
+ "turbo-tasks-build",
+ "turbo-tasks-malloc",
+ "turbo-tasks-memory",
 ]
 
 [[package]]

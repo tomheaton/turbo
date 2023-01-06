@@ -16,11 +16,10 @@ use auto_hash_map::AutoSet;
 use turbo_tasks::{
     backend::CellContent,
     event::{Event, EventListener},
-    primitives::RawVcSetVc,
     registry,
-    test_helpers::with_turbo_tasks_for_testing,
+    test_helpers::{current_task_for_testing, with_turbo_tasks_for_testing},
     util::StaticOrArc,
-    CellId, InvalidationReason, RawVc, TaskId, TraitTypeId, TurboTasksApi, TurboTasksCallApi,
+    CellId, InvalidationReason, RawVc, TaskId, TraitTypeId, TurboTasksApi, TurboTasksCallApi, Vc,
 };
 
 enum Task {
@@ -39,7 +38,7 @@ impl TurboTasksCallApi for VcStorage {
     fn dynamic_call(
         &self,
         func: turbo_tasks::FunctionId,
-        inputs: Vec<turbo_tasks::TaskInput>,
+        inputs: Vec<turbo_tasks::ConcreteTaskInput>,
     ) -> RawVc {
         let this = self.this.upgrade().unwrap();
         let func = registry::get_function(func).bind(&inputs);
@@ -70,7 +69,7 @@ impl TurboTasksCallApi for VcStorage {
     fn native_call(
         &self,
         _func: turbo_tasks::FunctionId,
-        _inputs: Vec<turbo_tasks::TaskInput>,
+        _inputs: Vec<turbo_tasks::ConcreteTaskInput>,
     ) -> RawVc {
         unreachable!()
     }
@@ -79,7 +78,7 @@ impl TurboTasksCallApi for VcStorage {
         &self,
         _trait_type: turbo_tasks::TraitTypeId,
         _trait_fn_name: Cow<'static, str>,
-        _inputs: Vec<turbo_tasks::TaskInput>,
+        _inputs: Vec<turbo_tasks::ConcreteTaskInput>,
     ) -> RawVc {
         unreachable!()
     }
@@ -195,7 +194,7 @@ impl TurboTasksApi for VcStorage {
         unimplemented!()
     }
 
-    fn read_task_collectibles(&self, _task: TaskId, _trait_id: TraitTypeId) -> RawVcSetVc {
+    fn read_task_collectibles(&self, _task: TaskId, _trait_id: TraitTypeId) -> Vc<AutoSet<RawVc>> {
         unimplemented!()
     }
 

@@ -1,73 +1,60 @@
 use std::ops::Deref;
 
-use anyhow::Result;
 use auto_hash_map::AutoSet;
 use turbo_tasks::debug::ValueDebugFormat;
+use turbo_tasks_macros::primitive;
 
-use crate::{self as turbo_tasks, RawVc, ValueToString, ValueToStringVc};
+use crate::{self as turbo_tasks, RawVc, Vc};
 
-#[turbo_tasks::value(transparent)]
-pub struct String(std::string::String);
+primitive!((), "unit");
+primitive!(String);
 
-#[turbo_tasks::value_impl]
-impl StringVc {
-    #[turbo_tasks::function]
-    pub fn empty() -> Self {
-        Self::cell("".to_string())
+#[turbo_tasks::function]
+fn empty_string() -> Vc<String> {
+    Vc::cell(String::new())
+}
+
+impl Vc<String> {
+    #[inline(always)]
+    pub fn empty() -> Vc<String> {
+        empty_string()
     }
 }
 
-#[turbo_tasks::value(transparent)]
-pub struct OptionU16(Option<u16>);
+primitive!(Option<String>, "option_string");
+primitive!(Vec<String>, "vec_string");
 
-#[turbo_tasks::value(transparent)]
-pub struct U32(u32);
+#[turbo_tasks::function]
+fn empty_string_vec() -> Vc<Vec<String>> {
+    Vc::cell(Vec::new())
+}
 
-#[turbo_tasks::value(transparent)]
-pub struct U64(u64);
-
-#[turbo_tasks::value_impl]
-impl ValueToString for U64 {
-    #[turbo_tasks::function]
-    fn to_string(&self) -> StringVc {
-        StringVc::cell(self.0.to_string())
+impl Vc<Vec<String>> {
+    #[inline(always)]
+    pub fn empty() -> Vc<Vec<String>> {
+        empty_string_vec()
     }
 }
 
-#[turbo_tasks::value(transparent)]
-pub struct OptionString(Option<std::string::String>);
+primitive!(Option<u16>, "option_u16");
 
-#[turbo_tasks::value(transparent)]
-pub struct Strings(Vec<std::string::String>);
+primitive!(bool);
 
-#[turbo_tasks::value_impl]
-impl StringsVc {
-    #[turbo_tasks::function]
-    pub fn empty() -> Self {
-        Self::cell(Vec::new())
-    }
-}
-
-#[turbo_tasks::value(transparent)]
-pub struct Bool(bool);
-
-#[turbo_tasks::value(transparent)]
-pub struct Usize(usize);
-
-#[turbo_tasks::value(transparent)]
-pub struct RawVcSet(AutoSet<RawVc>);
-
-#[derive(ValueDebugFormat)]
-#[turbo_tasks::value(transparent)]
-pub struct JsonValue(pub serde_json::Value);
-
-#[turbo_tasks::value_impl]
-impl ValueToString for JsonValue {
-    #[turbo_tasks::function]
-    fn to_string(&self) -> StringVc {
-        StringVc::cell(self.0.to_string())
-    }
-}
+primitive!(u8);
+primitive!(u16);
+primitive!(u32);
+primitive!(u64);
+primitive!(u128);
+primitive!(i8);
+primitive!(i16);
+primitive!(i32);
+primitive!(i64);
+primitive!(i128);
+primitive!(usize);
+primitive!(isize);
+primitive!(AutoSet<RawVc>, "auto_set_raw_vc");
+primitive!(serde_json::Value, "json_value");
+primitive!(Vec<u8>, "vec_u8");
 
 #[turbo_tasks::value(transparent, eq = "manual")]
 #[derive(Debug, Clone)]
