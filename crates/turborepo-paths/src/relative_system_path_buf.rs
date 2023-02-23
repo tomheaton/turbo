@@ -48,6 +48,11 @@ impl RelativeSystemPathBuf {
         Self(unchecked_path.into())
     }
 
+    /// Create a new RelativeSystemPathBuf from `path`.
+    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, PathValidationError> {
+        RelativeSystemPathBuf::new(path.as_ref().to_path_buf())
+    }
+
     pub fn as_path(&self) -> &Path {
         &self.0
     }
@@ -102,5 +107,17 @@ impl fmt::Display for RelativeSystemPathBuf {
 impl AsRef<Path> for RelativeSystemPathBuf {
     fn as_ref(&self) -> &Path {
         self.0.as_ref()
+    }
+}
+
+impl AsRef<RelativeSystemPathBuf> for RelativeSystemPathBuf {
+    fn as_ref(&self) -> &RelativeSystemPathBuf {
+        self
+    }
+}
+
+impl Into<PathBuf> for RelativeSystemPathBuf {
+    fn into(self) -> PathBuf {
+        self.0
     }
 }

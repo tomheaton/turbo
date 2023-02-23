@@ -2,7 +2,7 @@ use std::{fmt::Debug, io::Write};
 
 use bstr::{BString, ByteSlice};
 
-use crate::{PathError, PathValidationError};
+use crate::{AnchoredSystemPathBuf, IntoUnix, PathError, PathValidationError};
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct RelativeUnixPathBuf(BString);
@@ -100,6 +100,26 @@ impl Debug for RelativeUnixPathBuf {
             Ok(s) => write!(f, "{}", s),
             Err(_) => write!(f, "Non-utf8 {:?}", self.0),
         }
+    }
+}
+
+impl AsRef<Path> for RelativeUnixPathBuf {
+    fn as_ref(&self) -> &Path {
+        self.0.as_path()
+    }
+}
+
+impl Into<PathBuf> for RelativeUnixPathBuf {
+    fn into(self) -> PathBuf {
+        self.0
+    }
+}
+
+impl TryInto<AnchoredSystemPathBuf> for RelativeUnixPathBuf {
+    type Error = PathValidationError;
+
+    fn try_into(self) -> Result<AnchoredSystemPathBuf, Self::Error> {
+        self.0.as_path().try_into()
     }
 }
 

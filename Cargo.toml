@@ -112,6 +112,7 @@ turbopack-test-utils = { path = "crates/turbopack-test-utils" }
 turbopack-tests = { path = "crates/turbopack-tests" }
 turbopath = { path = "crates/turborepo-paths" }
 turborepo = { path = "crates/turborepo" }
+turborepo-cache = { path = "crates/turborepo-cache" }
 turborepo-api-client = { path = "crates/turborepo-api-client" }
 turborepo-ffi = { path = "crates/turborepo-ffi" }
 turborepo-fs = { path = "crates/turborepo-fs" }

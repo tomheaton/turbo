@@ -23,6 +23,7 @@ import (
 	"unsafe"
 
 	ffi_proto "github.com/vercel/turbo/cli/internal/ffi/proto"
+	"github.com/vercel/turbo/cli/internal/turbopath"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -109,16 +110,24 @@ func GetTurboDataDir() string {
 // Go convention is to use an empty string for an uninitialized or null-valued
 // string. Rust convention is to use an Option<String> for the same purpose, which
 // is encoded on the Go side as *string. This converts between the two.
-func stringToRef(s string) *string {
+func StringToRef(s string) *string {
 	if s == "" {
 		return nil
 	}
 	return &s
 }
 
+// Same as `StringToRef`, but for uint64
+func Uint64ToRef(i uint64) *uint64 {
+	if i == 0 {
+		return nil
+	}
+	return &i
+}
+
 // ChangedFiles returns the files changed in between two commits, the workdir and the index, and optionally untracked files
 func ChangedFiles(gitRoot string, turboRoot string, fromCommit string, toCommit string) ([]string, error) {
-	fromCommitRef := stringToRef(fromCommit)
+	fromCommitRef := StringToRef(fromCommit)
 
 	req := ffi_proto.ChangedFilesReq{
 		GitRoot:    gitRoot,
@@ -312,4 +321,80 @@ func GlobalChange(packageManager string, prevContents []byte, currContents []byt
 	}
 
 	return resp.GetGlobalChange()
+}
+
+// GetPackageFileHashesFromGitIndex proxies to rust to use git to hash the files in a package.
+// It does not support additional files, it just hashes the non-ignored files in the package.
+func GetPackageFileHashesFromGitIndex(rootPath string, packagePath string) (map[string]string, error) {
+	req := ffi_proto.GetPackageFileHashesFromGitIndexRequest{
+		TurboRoot:   rootPath,
+		PackagePath: packagePath,
+	}
+	reqBuf := Marshal(&req)
+	resBuf := C.get_package_file_hashes_from_git_index(reqBuf)
+	reqBuf.Free()
+
+	resp := ffi_proto.GetPackageFileHashesFromGitIndexResponse{}
+	if err := Unmarshal(resBuf, resp.ProtoReflect().Interface()); err != nil {
+		panic(err)
+	}
+
+	if err := resp.GetError(); err != "" {
+		return nil, errors.New(err)
+	}
+	hashes := resp.GetHashes()
+	return hashes.GetHashes(), nil
+}
+
+func HttpCache__Retrieve(hash string, baseUrl string, timeout uint64, version string, token string, teamId string, teamSlug string, usePreflight bool, hasAuthenticator bool, repoRoot turbopath.AbsoluteSystemPath) (bool, []turbopath.AnchoredSystemPath, uint64, error) {
+	apiClientReq := ffi_proto.NewAPIClientRequest{
+		BaseUrl:      baseUrl,
+		Timeout:      Uint64ToRef(timeout),
+		Version:      version,
+		Token:        token,
+		TeamId:       teamId,
+		TeamSlug:     StringToRef(teamSlug),
+		UsePreflight: usePreflight,
+	}
+
+	var authenticator *ffi_proto.NewArtifactSignatureAuthenticatorRequest
+	if hasAuthenticator {
+		authenticator = &ffi_proto.NewArtifactSignatureAuthenticatorRequest{
+			TeamId: teamId,
+		}
+	}
+
+	httpCacheReq := ffi_proto.NewHttpCacheRequest{
+		ApiClient:     &apiClientReq,
+		Authenticator: authenticator,
+
+		RepoRoot: repoRoot.ToString(),
+	}
+
+	req := ffi_proto.RetrieveRequest{
+		Hash:      hash,
+		HttpCache: &httpCacheReq,
+	}
+
+	reqBuf := Marshal(&req)
+	defer reqBuf.Free()
+
+	respBuf := C.retrieve(reqBuf)
+	resp := ffi_proto.RetrieveResponse{}
+	if err := Unmarshal(respBuf, resp.ProtoReflect().Interface()); err != nil {
+		panic(err)
+	}
+	if err := resp.GetError(); err != "" {
+		return false, nil, 0, errors.New(err)
+	}
+
+	restoredFilesList := resp.GetFiles()
+	filesAsStrings := restoredFilesList.GetFiles()
+	duration := restoredFilesList.GetDuration()
+	files := make([]turbopath.AnchoredSystemPath, len(filesAsStrings))
+	for i, file := range filesAsStrings {
+		files[i] = turbopath.AnchoredSystemPath(file)
+	}
+
+	return true, files, duration, nil
 }

@@ -11,7 +11,10 @@ crate-type = ["staticlib"]
 directories = "4.0.1"
 prost = "0.11.6"
 thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
 turbopath = { workspace = true }
+turborepo-api-client = { workspace = true }
+turborepo-cache = { workspace = true }
 turborepo-fs = { workspace = true }
 turborepo-lockfiles = { workspace = true }
 turborepo-scm = { workspace = true }

@@ -160,8 +160,8 @@ impl AbsoluteSystemPathBuf {
         self.0.ends_with(child.as_ref())
     }
 
-    pub fn join_relative(&self, path: RelativeSystemPathBuf) -> AbsoluteSystemPathBuf {
-        AbsoluteSystemPathBuf(self.0.join(path.as_path()))
+    pub fn join_relative(&self, path: impl AsRef<RelativeSystemPathBuf>) -> AbsoluteSystemPathBuf {
+        AbsoluteSystemPathBuf(self.0.join(path.as_ref()))
     }
 
     pub fn join_literal(&self, segment: &str) -> Self {

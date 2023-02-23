@@ -82,9 +82,33 @@ func (c *APIClient) IsLinked() bool {
 	return c.hasUser() && (c.teamID != "" || c.teamSlug != "")
 }
 
+func (c *APIClient) GetBaseUrl() string {
+	return c.baseURL
+}
+
+func (c *APIClient) GetTimeout() uint64 {
+	return uint64(c.HTTPClient.HTTPClient.Timeout.Seconds())
+}
+
+func (c *APIClient) GetVersion() string {
+	return c.turboVersion
+}
+
+func (c *APIClient) GetToken() string {
+	return c.token
+}
+
 // GetTeamID returns the currently configured team id
 func (c *APIClient) GetTeamID() string {
 	return c.teamID
+}
+
+func (c *APIClient) GetTeamSlug() string {
+	return c.teamSlug
+}
+
+func (c *APIClient) GetUsePreflight() bool {
+	return c.usePreflight
 }
 
 func (c *APIClient) retryCachePolicy(resp *http.Response, err error) (bool, error) {

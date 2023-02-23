@@ -39,7 +39,10 @@ func (asa *ArtifactSignatureAuthentication) generateTag(hash string, artifactBod
 		return "", err
 	}
 	tag.Write(artifactBody)
-	return base64.StdEncoding.EncodeToString(tag.Sum(nil)), nil
+	hmacOutput := tag.Sum(nil)
+	output := base64.StdEncoding.EncodeToString(hmacOutput)
+
+	return output, nil
 }
 
 func (asa *ArtifactSignatureAuthentication) getTagGenerator(hash string) (hash.Hash, error) {
@@ -59,19 +62,18 @@ func (asa *ArtifactSignatureAuthentication) getTagGenerator(hash string) (hash.H
 	if err != nil {
 		return nil, err
 	}
-
 	// TODO(Gaspar) Support additional signing algorithms here
 	h := hmac.New(sha256.New, secret)
 	h.Write(metadata)
 	return h, nil
 }
 
-func (asa *ArtifactSignatureAuthentication) validate(hash string, artifactBody []byte, expectedTag string) (bool, error) {
+func (asa *ArtifactSignatureAuthentication) validate(hash string, artifactBody []byte, expectedTag []byte) (bool, error) {
 	computedTag, err := asa.generateTag(hash, artifactBody)
 	if err != nil {
 		return false, fmt.Errorf("failed to verify artifact tag: %w", err)
 	}
-	return hmac.Equal([]byte(computedTag), []byte(expectedTag)), nil
+	return hmac.Equal([]byte(computedTag), expectedTag), nil
 }
 
 type StreamValidator struct {

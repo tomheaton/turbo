@@ -54,7 +54,7 @@ func TestRemoteCachingDisabled(t *testing.T) {
 		Message: "Remote Caching has been disabled for this team. A team owner can enable it here: $URL",
 	}
 	client := &errorResp{err: clientErr}
-	cache := &httpCache{
+	cache := &HttpCache{
 		client:         client,
 		requestLimiter: make(limiter, 20),
 	}
