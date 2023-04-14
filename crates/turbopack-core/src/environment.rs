@@ -166,7 +166,7 @@ impl Environment {
         execution: Value<ExecutionEnvironment>,
         intention: Value<EnvironmentIntention>,
     ) -> Vc<Self> {
-        Vc::<Self>::cell(Environment {
+        Self::cell(Environment {
             execution: execution.into_value(),
             intention: intention.into_value(),
         })
@@ -263,7 +263,7 @@ impl Environment {
                 ])
             }
             ExecutionEnvironment::EdgeWorker(_) | ExecutionEnvironment::Browser(_) => {
-                Strings::empty()
+                Vc::<Vec<String>>::empty()
             }
             ExecutionEnvironment::Custom(_) => todo!(),
         })
@@ -290,7 +290,7 @@ impl Environment {
             ExecutionEnvironment::NodeJsBuildTime(..) | ExecutionEnvironment::NodeJsLambda(_) => {
                 Vc::cell(vec!["node".to_string()])
             }
-            ExecutionEnvironment::Browser(_) => Strings::empty(),
+            ExecutionEnvironment::Browser(_) => Vc::<Vec<String>>::empty(),
             ExecutionEnvironment::EdgeWorker(_) => Vc::cell(vec!["edge-worker".to_string()]),
             ExecutionEnvironment::Custom(_) => todo!(),
         })
@@ -353,7 +353,7 @@ impl Default for NodeJsEnvironment {
     fn default() -> Self {
         NodeJsEnvironment {
             compile_target: CompileTarget::current(),
-            node_version: NodeJsVersion::default(),
+            node_version: NodeJsVersion::default().cell(),
             cwd: Vc::cell(None),
             server_addr: ServerAddr::empty(),
         }
@@ -380,7 +380,7 @@ impl NodeJsEnvironment {
 
     #[turbo_tasks::function]
     pub fn current(process_env: Vc<Box<dyn ProcessEnv>>, server_addr: Vc<ServerAddr>) -> Vc<Self> {
-        Vc::<Self>::cell(NodeJsEnvironment {
+        Self::cell(NodeJsEnvironment {
             compile_target: CompileTarget::current(),
             node_version: NodeJsVersion::cell(NodeJsVersion::Current(process_env)),
             cwd: Vc::cell(None),
@@ -396,8 +396,8 @@ pub enum NodeJsVersion {
 }
 
 impl Default for NodeJsVersion {
-    fn default() -> Vc<Self> {
-        NodeJsVersion::Static(Vc::cell(DEFAULT_NODEJS_VERSION.to_owned())).cell()
+    fn default() -> Self {
+        NodeJsVersion::Static(Vc::cell(DEFAULT_NODEJS_VERSION.to_owned()))
     }
 }
 

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
-use turbo_tasks::trace::TraceRawVcs;
+use turbo_tasks::{trace::TraceRawVcs, Vc};
 
 #[turbo_tasks::value(shared, serialization = "auto_for_input")]
 #[derive(PartialOrd, Ord, Hash, Debug, Copy, Clone)]
@@ -15,17 +15,11 @@ pub struct CompileTarget {
     pub libc: Libc,
 }
 
-impl Default for CompileTarget {
-    fn default() -> Vc<Self> {
-        Vc::<Self>::current()
-    }
-}
-
 #[turbo_tasks::value_impl]
 impl CompileTarget {
     #[turbo_tasks::function]
     pub fn current() -> Vc<Self> {
-        Vc::<Self>::cell(CompileTarget {
+        Self::cell(CompileTarget {
             arch: CompileTarget::current_arch(),
             platform: CompileTarget::current_platform(),
             endianness: CompileTarget::current_endianness(),
@@ -35,7 +29,7 @@ impl CompileTarget {
 
     #[turbo_tasks::function]
     pub fn unknown() -> Vc<Self> {
-        Vc::<Self>::cell(CompileTarget {
+        Self::cell(CompileTarget {
             arch: Arch::Unknown,
             platform: Platform::Unknown,
             endianness: Endianness::Big,

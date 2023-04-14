@@ -29,7 +29,7 @@ pub async fn any_content_changed(root: Vc<Box<dyn Asset>>) -> Result<Vc<Completi
         .map(content_changed)
         .collect();
 
-    Ok(Vc::cell(completions).completed())
+    Ok(Vc::<Completions>::cell(completions).completed())
 }
 
 /// Returns a completion that changes when the content of the given asset

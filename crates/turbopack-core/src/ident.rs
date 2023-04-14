@@ -82,7 +82,7 @@ impl AssetIdent {
     /// Creates an [AssetIdent] from a [Vc<FileSystemPath>]
     #[turbo_tasks::function]
     pub fn from_path(path: Vc<FileSystemPath>) -> Vc<Self> {
-        Vc::<Self>::new(Value::new(AssetIdent {
+        Self::new(Value::new(AssetIdent {
             path,
             query: None,
             fragment: None,
@@ -96,14 +96,14 @@ impl AssetIdent {
     pub async fn with_modifier(self: Vc<Self>, modifier: Vc<String>) -> Result<Vc<Self>> {
         let mut this = self.await?.clone_value();
         this.add_modifier(modifier);
-        Ok(Vc::<Self>::new(Value::new(this)))
+        Ok(Self::new(Value::new(this)))
     }
 
     #[turbo_tasks::function]
     pub async fn with_part(self: Vc<Self>, part: Vc<ModulePart>) -> Result<Vc<Self>> {
         let mut this = self.await?.clone_value();
         this.part = Some(part);
-        Ok(Vc::<Self>::new(Value::new(this)))
+        Ok(Self::new(Value::new(this)))
     }
 
     #[turbo_tasks::function]

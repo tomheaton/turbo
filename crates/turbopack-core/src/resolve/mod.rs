@@ -15,8 +15,8 @@ use turbo_tasks_fs::{
 
 use self::{
     options::{
-        resolve_modules_options, ImportMapResult, ResolveInPackage, ResolveIntoPackage,
-        ResolveModules, ResolveModulesOptions, ResolveOptions,
+        resolve_modules_options, ConditionValue, ImportMapResult, ResolveInPackage,
+        ResolveIntoPackage, ResolveModules, ResolveModulesOptions, ResolveOptions,
     },
     parse::Request,
     pattern::QueryMap,
@@ -28,11 +28,6 @@ use crate::{
     package_json::{read_package_json, PackageJsonIssue},
     reference::AssetReference,
     reference_type::ReferenceType,
-    resolve::{
-        options::{ConditionValue, ResolveOptions},
-        pattern::{read_matches, Pattern, PatternMatch},
-        plugin::ResolvePlugin,
-    },
     source_asset::SourceAsset,
 };
 
@@ -152,7 +147,7 @@ impl ResolveResult {
         }
     }
 
-    pub fn add_reference(&mut self, reference: Vc<Box<dyn AssetReference>>) {
+    pub fn add_reference_ref(&mut self, reference: Vc<Box<dyn AssetReference>>) {
         self.references.push(reference);
     }
 
@@ -172,7 +167,7 @@ impl ResolveResult {
         self.references.extend(other.references.iter().copied());
     }
 
-    pub fn is_unresolveable(&self) -> bool {
+    pub fn is_unresolveable_ref(&self) -> bool {
         self.primary.is_empty()
     }
 
@@ -219,7 +214,7 @@ impl ResolveResult {
         reference: Vc<Box<dyn AssetReference>>,
     ) -> Result<Vc<Self>> {
         let mut this = self.await?.clone_value();
-        this.add_reference(reference);
+        this.add_reference_ref(reference);
         Ok(this.into())
     }
 
@@ -230,7 +225,7 @@ impl ResolveResult {
     ) -> Result<Vc<Self>> {
         let mut this = self.await?.clone_value();
         for reference in references {
-            this.add_reference(reference);
+            this.add_reference_ref(reference);
         }
         Ok(this.into())
     }
@@ -246,7 +241,7 @@ impl ResolveResult {
         }
         for result in results {
             let result_ref = result.await?;
-            if !result_ref.is_unresolveable() {
+            if !result_ref.is_unresolveable_ref() {
                 return Ok(result_ref.clone_with_references(references).cell());
             }
         }
@@ -266,9 +261,9 @@ impl ResolveResult {
                 let other = &*result;
                 current.merge_alternatives(other);
             }
-            Ok(Vc::<Self>::cell(current))
+            Ok(Self::cell(current))
         } else {
-            Ok(Vc::<Self>::cell(ResolveResult::unresolveable()))
+            Ok(Self::cell(ResolveResult::unresolveable()))
         }
     }
 
@@ -278,7 +273,7 @@ impl ResolveResult {
         references: Vec<Vc<Box<dyn AssetReference>>>,
     ) -> Result<Vc<Self>> {
         if references.is_empty() {
-            return Vc::<Self>::alternatives_inline(results).await;
+            return Ok(Self::alternatives(results));
         }
         if results.len() == 1 {
             return Ok(results
@@ -296,18 +291,18 @@ impl ResolveResult {
                 current.merge_alternatives(other);
             }
             current.references.extend(references);
-            Ok(Vc::<Self>::cell(current))
+            Ok(Self::cell(current))
         } else {
-            Ok(Vc::<Self>::cell(
-                ResolveResult::unresolveable_with_references(references),
-            ))
+            Ok(Self::cell(ResolveResult::unresolveable_with_references(
+                references,
+            )))
         }
     }
 
     #[turbo_tasks::function]
     pub async fn is_unresolveable(self: Vc<Self>) -> Result<Vc<bool>> {
         let this = self.await?;
-        Ok(Vc::cell(this.is_unresolveable()))
+        Ok(Vc::cell(this.is_unresolveable_ref()))
     }
 
     #[turbo_tasks::function]
@@ -325,7 +320,7 @@ impl ResolveResult {
     #[turbo_tasks::function]
     pub async fn primary_assets(self: Vc<Self>) -> Result<Vc<Assets>> {
         let this = self.await?;
-        Ok(Assets::cell(
+        Ok(Vc::cell(
             this.primary
                 .iter()
                 .filter_map(|item| {
@@ -377,7 +372,7 @@ async fn type_exists(
 ) -> Result<Option<Vc<FileSystemPath>>> {
     let result = fs_path.resolve().await?.realpath_with_links().await?;
     for path in result.symlinks.iter() {
-        refs.push(AffectingResolvingAssetReference::new(*path).into());
+        refs.push(Vc::upcast(AffectingResolvingAssetReference::new(*path)));
     }
     let path = result.path;
     Ok(if *path.get_type().await? == ty {
@@ -480,7 +475,7 @@ pub async fn find_context_file(
     let mut refs = Vec::new();
     let context_value = context.await?;
     for name in &*names.await? {
-        let fs_path = context.join(name);
+        let fs_path = context.join(name.clone());
         if let Some(fs_path) = exists(fs_path, &mut refs).await? {
             return Ok(FindContextFileResult::Found(fs_path, refs).into());
         }
@@ -529,11 +524,11 @@ async fn find_package(
                 let mut context_value = context.await?;
                 // For clippy -- This explicit deref is necessary
                 let root = &*root_vc.await?;
-                while context_value.is_inside(root) {
+                while context_value.is_inside_ref(root) {
                     for name in names.iter() {
-                        let fs_path = context.join(name);
+                        let fs_path = context.join(name.clone());
                         if let Some(fs_path) = dir_exists(fs_path, &mut references).await? {
-                            let fs_path = fs_path.join(&package_name);
+                            let fs_path = fs_path.join(package_name.clone());
                             if let Some(fs_path) = dir_exists(fs_path, &mut references).await? {
                                 packages.push(fs_path);
                             }
@@ -548,7 +543,7 @@ async fn find_package(
                 }
             }
             ResolveModules::Path(context) => {
-                let package_dir = context.join(&package_name);
+                let package_dir = context.join(package_name.clone());
                 if dir_exists(package_dir, &mut references).await?.is_some() {
                     packages.push(package_dir.resolve().await?);
                 }
@@ -597,10 +592,10 @@ pub async fn resolve_raw(
     async fn to_result(path: Vc<FileSystemPath>) -> Result<Vc<ResolveResult>> {
         let RealPathResult { path, symlinks } = &*path.realpath_with_links().await?;
         Ok(ResolveResult::asset_with_references(
-            SourceAsset::new(*path).into(),
+            Vc::upcast(SourceAsset::new(*path)),
             symlinks
                 .iter()
-                .map(|p| AffectingResolvingAssetReference::new(*p).into())
+                .map(|p| Vc::upcast(AffectingResolvingAssetReference::new(*p)))
                 .collect(),
         )
         .into())
@@ -821,7 +816,7 @@ async fn resolve_internal(
             new_pat.push_front(".".to_string().into());
             let relative = Request::relative(Value::new(new_pat), true);
 
-            let issue: Vc<ResolvingIssue> = ResolvingIssue {
+            ResolvingIssue {
                 severity: IssueSeverity::Error.cell(),
                 request_type: "server relative import: not implemented yet".to_string(),
                 request,
@@ -834,13 +829,13 @@ async fn resolve_internal(
                 ),
                 source: OptionIssueSource::none(),
             }
-            .into();
-            issue.as_issue().emit();
+            .cell()
+            .emit();
 
             resolve_internal(context.root(), relative, options)
         }
         Request::Windows { path: _ } => {
-            let issue: Vc<ResolvingIssue> = ResolvingIssue {
+            ResolvingIssue {
                 severity: IssueSeverity::Error.cell(),
                 request_type: "windows import: not implemented yet".to_string(),
                 request,
@@ -849,8 +844,8 @@ async fn resolve_internal(
                 error_message: Some("windows imports are not implemented yet".to_string()),
                 source: OptionIssueSource::none(),
             }
-            .into();
-            issue.as_issue().emit();
+            .cell()
+            .emit();
 
             ResolveResult::unresolveable().into()
         }
@@ -886,7 +881,7 @@ async fn resolve_internal(
         ))
         .into(),
         Request::Unknown { path } => {
-            let issue: Vc<ResolvingIssue> = ResolvingIssue {
+            ResolvingIssue {
                 severity: IssueSeverity::Error.cell(),
                 request_type: format!("unknown import: `{}`", path),
                 request,
@@ -895,8 +890,8 @@ async fn resolve_internal(
                 error_message: None,
                 source: OptionIssueSource::none(),
             }
-            .into();
-            issue.as_issue().emit();
+            .cell()
+            .emit();
             ResolveResult::unresolveable().into()
         }
     };
@@ -945,11 +940,11 @@ async fn resolve_into_folder(
                         let result = &*resolve_internal(package_path, request, options).await?;
                         // we are not that strict when a main field fails to resolve
                         // we continue to try other alternatives
-                        if !result.is_unresolveable() {
+                        if !result.is_unresolveable_ref() {
                             let mut result = result.clone();
-                            result.add_reference(
-                                AffectingResolvingAssetReference::new(package_json_path).into(),
-                            );
+                            result.add_reference_ref(Vc::upcast(
+                                AffectingResolvingAssetReference::new(package_json_path),
+                            ));
                             return Ok(result.into());
                         }
                     }
@@ -1178,7 +1173,7 @@ async fn resolve_alias_field_result(
         )
         .add_references(refs));
     }
-    let issue: Vc<ResolvingIssue> = ResolvingIssue {
+    ResolvingIssue {
         severity: IssueSeverity::Error.cell(),
         context: issue_context,
         request_type: format!("alias field ({field_name})"),
@@ -1187,8 +1182,8 @@ async fn resolve_alias_field_result(
         error_message: Some(format!("invalid alias field value: {}", result)),
         source: OptionIssueSource::none(),
     }
-    .cell();
-    issue.as_issue().emit();
+    .cell()
+    .emit();
     Ok(ResolveResult::unresolveable_with_references(refs).cell())
 }
 
@@ -1259,10 +1254,10 @@ async fn resolved(
     }
 
     Ok(ResolveResult::asset_with_references(
-        SourceAsset::new(*path).into(),
+        Vc::upcast(SourceAsset::new(*path)),
         symlinks
             .iter()
-            .map(|p| AffectingResolvingAssetReference::new(*p).into())
+            .map(|p| Vc::upcast(AffectingResolvingAssetReference::new(*p)))
             .collect(),
     )
     .into())
@@ -1307,7 +1302,9 @@ fn handle_exports_imports_field(
     // other options do not apply anymore when an exports field exist
     Ok(merge_results_with_references(
         resolved_results,
-        vec![AffectingResolvingAssetReference::new(package_json_path).into()],
+        vec![Vc::upcast(AffectingResolvingAssetReference::new(
+            package_json_path,
+        ))],
     ))
 }
 
@@ -1368,7 +1365,7 @@ pub struct AffectingResolvingAssetReference {
 impl AffectingResolvingAssetReference {
     #[turbo_tasks::function]
     pub fn new(path: Vc<FileSystemPath>) -> Vc<Self> {
-        Vc::<Self>::cell(AffectingResolvingAssetReference { path })
+        Self::cell(AffectingResolvingAssetReference { path })
     }
 }
 
@@ -1376,7 +1373,7 @@ impl AffectingResolvingAssetReference {
 impl AssetReference for AffectingResolvingAssetReference {
     #[turbo_tasks::function]
     fn resolve_reference(&self) -> Vc<ResolveResult> {
-        ResolveResult::asset(SourceAsset::new(self.path).into()).into()
+        ResolveResult::asset(Vc::upcast(SourceAsset::new(self.path))).into()
     }
 }
 
@@ -1403,7 +1400,7 @@ pub async fn handle_resolve_error(
     Ok(match result.is_unresolveable().await {
         Ok(unresolveable) => {
             if *unresolveable {
-                let issue: Vc<ResolvingIssue> = ResolvingIssue {
+                ResolvingIssue {
                     severity,
                     context: origin_path,
                     request_type: format!("{} request", reference_type.into_value()),
@@ -1412,13 +1409,13 @@ pub async fn handle_resolve_error(
                     error_message: None,
                     source,
                 }
-                .into();
-                issue.as_issue().emit();
+                .cell()
+                .emit();
             }
             result
         }
         Err(err) => {
-            let issue: Vc<ResolvingIssue> = ResolvingIssue {
+            ResolvingIssue {
                 severity,
                 context: origin_path,
                 request_type: format!("{} request", reference_type.into_value()),
@@ -1427,8 +1424,8 @@ pub async fn handle_resolve_error(
                 error_message: Some(err.to_string()),
                 source,
             }
-            .into();
-            issue.as_issue().emit();
+            .cell()
+            .emit();
             ResolveResult::unresolveable().into()
         }
     })

@@ -87,14 +87,11 @@ pub trait ChunkableAsset: Asset {
         availability_info: Value<AvailabilityInfo>,
     ) -> Vc<Box<dyn Chunk>>;
 
-    fn as_root_chunk(
-        self: Vc<Box<dyn ChunkableAsset>>,
-        context: Vc<Box<dyn ChunkingContext>>,
-    ) -> Vc<Box<dyn Chunk>> {
+    fn as_root_chunk(self: Vc<Self>, context: Vc<Box<dyn ChunkingContext>>) -> Vc<Box<dyn Chunk>> {
         self.as_chunk(
             context,
             Value::new(AvailabilityInfo::Root {
-                current_availability_root: self.into(),
+                current_availability_root: Vc::upcast(self),
             }),
         )
     }
@@ -108,7 +105,7 @@ impl Chunks {
     /// Creates a new empty [Vc<Chunks>].
     #[turbo_tasks::function]
     pub fn empty() -> Vc<Chunks> {
-        Vc::<Self>::cell(vec![])
+        Self::cell(vec![])
     }
 }
 
@@ -208,7 +205,7 @@ impl ChunkGroupReference {
         chunking_context: Vc<Box<dyn ChunkingContext>>,
         entry: Vc<Box<dyn Chunk>>,
     ) -> Vc<Self> {
-        Vc::<Self>::cell(ChunkGroupReference {
+        Self::cell(ChunkGroupReference {
             chunking_context,
             entry,
         })
@@ -250,16 +247,16 @@ pub struct ChunkContentResult<I> {
 }
 
 #[async_trait::async_trait]
-pub trait FromChunkableAsset: ChunkItem + Sized + Debug {
+pub trait FromChunkableAsset: ChunkItem + Unpin + Debug {
     async fn from_asset(
         context: Vc<Box<dyn ChunkingContext>>,
         asset: Vc<Box<dyn Asset>>,
-    ) -> Result<Option<Self>>;
+    ) -> Result<Option<Vc<Self>>>;
     async fn from_async_asset(
         context: Vc<Box<dyn ChunkingContext>>,
         asset: Vc<Box<dyn ChunkableAsset>>,
         availability_info: Value<AvailabilityInfo>,
-    ) -> Result<Option<Self>>;
+    ) -> Result<Option<Vc<Self>>>;
 }
 
 pub async fn chunk_content_split<I>(
@@ -269,7 +266,7 @@ pub async fn chunk_content_split<I>(
     availability_info: Value<AvailabilityInfo>,
 ) -> Result<ChunkContentResult<I>>
 where
-    I: FromChunkableAsset + Eq + std::hash::Hash + Clone,
+    I: FromChunkableAsset,
 {
     chunk_content_internal_parallel(context, entry, additional_entries, availability_info, true)
         .await
@@ -283,7 +280,7 @@ pub async fn chunk_content<I>(
     availability_info: Value<AvailabilityInfo>,
 ) -> Result<Option<ChunkContentResult<I>>>
 where
-    I: FromChunkableAsset + Eq + std::hash::Hash + Clone,
+    I: FromChunkableAsset,
 {
     chunk_content_internal_parallel(context, entry, additional_entries, availability_info, false)
         .await
@@ -317,13 +314,13 @@ async fn reference_to_graph_nodes<I>(
 ) -> Result<
     Vec<(
         Option<(Vc<Box<dyn Asset>>, ChunkingType)>,
-        ChunkContentGraphNode<I>,
+        ChunkContentGraphNode<Vc<I>>,
     )>,
 >
 where
-    I: FromChunkableAsset + Eq + std::hash::Hash + Clone,
+    I: FromChunkableAsset,
 {
-    let Some(chunkable_asset_reference) = Vc::try_resolve_downcast::<ChunkableAssetReference>(reference).await? else {
+    let Some(chunkable_asset_reference) = Vc::try_resolve_downcast::<&dyn ChunkableAssetReference>(reference).await? else {
         return Ok(vec![(None, ChunkContentGraphNode::ExternalAssetReference(reference))]);
     };
 
@@ -482,27 +479,26 @@ type ChunkItemToGraphNodesEdges<I> = impl Iterator<
     ),
 >;
 
-type ChunkItemToGraphNodesFuture<I: FromChunkableAsset + Eq + std::hash::Hash + Clone> =
-    impl Future<Output = Result<ChunkItemToGraphNodesEdges<I>>>;
+type ChunkItemToGraphNodesFuture<I> = impl Future<Output = Result<ChunkItemToGraphNodesEdges<I>>>;
 
-impl<I> Visit<ChunkContentGraphNode<I>, ()> for ChunkContentVisit<I>
+impl<I> Visit<ChunkContentGraphNode<Vc<I>>, ()> for ChunkContentVisit<I>
 where
-    I: FromChunkableAsset + Eq + std::hash::Hash + Clone,
+    I: FromChunkableAsset,
 {
     type Edge = (
         Option<(Vc<Box<dyn Asset>>, ChunkingType)>,
-        ChunkContentGraphNode<I>,
+        ChunkContentGraphNode<Vc<I>>,
     );
-    type EdgesIntoIter = ChunkItemToGraphNodesEdges<I>;
-    type EdgesFuture = ChunkItemToGraphNodesFuture<I>;
+    type EdgesIntoIter = ChunkItemToGraphNodesEdges<Vc<I>>;
+    type EdgesFuture = ChunkItemToGraphNodesFuture<Vc<I>>;
 
     fn visit(
         &mut self,
         (option_key, node): (
             Option<(Vc<Box<dyn Asset>>, ChunkingType)>,
-            ChunkContentGraphNode<I>,
+            ChunkContentGraphNode<Vc<I>>,
         ),
-    ) -> VisitControlFlow<ChunkContentGraphNode<I>, ()> {
+    ) -> VisitControlFlow<ChunkContentGraphNode<Vc<I>>, ()> {
         let Some((asset, chunking_type)) = option_key else {
             return VisitControlFlow::Continue(node);
         };
@@ -526,7 +522,7 @@ where
         VisitControlFlow::Continue(node)
     }
 
-    fn edges(&mut self, node: &ChunkContentGraphNode<I>) -> Self::EdgesFuture {
+    fn edges(&mut self, node: &ChunkContentGraphNode<Vc<I>>) -> Self::EdgesFuture {
         let chunk_item = if let ChunkContentGraphNode::ChunkItem {
             item: chunk_item, ..
         } = node
@@ -572,7 +568,7 @@ async fn chunk_content_internal_parallel<I>(
     split: bool,
 ) -> Result<Option<ChunkContentResult<I>>>
 where
-    I: FromChunkableAsset + Eq + std::hash::Hash + Clone,
+    I: FromChunkableAsset,
 {
     let additional_entries = if let Some(additional_entries) = additional_entries {
         additional_entries.await?.clone_value().into_iter()

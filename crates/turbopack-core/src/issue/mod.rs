@@ -14,7 +14,7 @@ use async_trait::async_trait;
 use auto_hash_map::AutoSet;
 use turbo_tasks::{
     emit, CollectiblesSource, RawVc, ReadRef, TransientInstance, TransientValue, TryJoinIterExt,
-    ValueToString, Vc,
+    Upcast, ValueToString, Vc,
 };
 use turbo_tasks_fs::{FileContent, FileLine, FileLinesContent, FileSystemPath};
 use turbo_tasks_hash::{DeterministicHash, Xxh3Hash64Hasher};
@@ -76,53 +76,86 @@ impl Display for IssueSeverity {
 pub trait Issue {
     /// Severity allows the user to filter out unimportant issues, with Bug
     /// being the highest priority and Info being the lowest.
-    fn severity(&self) -> Vc<IssueSeverity> {
+    fn severity(self: Vc<Self>) -> Vc<IssueSeverity> {
         IssueSeverity::Error.into()
     }
 
     /// The file path that generated the issue, displayed to the user as message
     /// header.
-    fn context(&self) -> Vc<FileSystemPath>;
+    fn context(self: Vc<Self>) -> Vc<FileSystemPath>;
 
     /// A short identifier of the type of error (eg "parse", "analyze", or
     /// "evaluate") displayed to the user as part of the message header.
-    fn category(&self) -> Vc<String> {
-        String::empty()
+    fn category(self: Vc<Self>) -> Vc<String> {
+        Vc::<String>::empty()
     }
 
     /// The issue title should be descriptive of the issue, but should be a
     /// single line. This is displayed to the user directly under the issue
     /// header.
     // TODO add Vc<StyledString>
-    fn title(&self) -> Vc<String>;
+    fn title(self: Vc<Self>) -> Vc<String>;
 
     /// A more verbose message of the issue, appropriate for providing multiline
     /// information of the issue.
     // TODO add Vc<StyledString>
-    fn description(&self) -> Vc<String>;
+    fn description(self: Vc<Self>) -> Vc<String>;
 
     /// Full details of the issue, appropriate for providing debug level
     /// information. Only displayed if the user explicitly asks for detailed
     /// messages (not to be confused with severity).
-    fn detail(&self) -> Vc<String> {
-        String::empty()
+    fn detail(self: Vc<Self>) -> Vc<String> {
+        Vc::<String>::empty()
     }
 
     /// A link to relevant documentation of the issue. Only displayed in console
     /// if the user explicitly asks for detailed messages.
-    fn documentation_link(&self) -> Vc<String> {
-        String::empty()
+    fn documentation_link(self: Vc<Self>) -> Vc<String> {
+        Vc::<String>::empty()
     }
 
     /// The source location that caused the issue. Eg, for a parsing error it
     /// should point at the offending character. Displayed to the user alongside
     /// the title/description.
-    fn source(&self) -> Vc<OptionIssueSource> {
+    fn source(self: Vc<Self>) -> Vc<OptionIssueSource> {
         OptionIssueSource::none()
     }
 
-    fn sub_issues(&self) -> Vc<Issues> {
+    fn sub_issues(self: Vc<Self>) -> Vc<Issues> {
         Vc::cell(Vec::new())
+    }
+
+    async fn into_plain(
+        self: Vc<Self>,
+        processing_path: Vc<OptionIssueProcessingPathItems>,
+    ) -> Result<Vc<PlainIssue>> {
+        Ok(PlainIssue {
+            severity: *self.severity().await?,
+            context: self.context().to_string().await?.clone_value(),
+            category: self.category().await?.clone_value(),
+            title: self.title().await?.clone_value(),
+            description: self.description().await?.clone_value(),
+            detail: self.detail().await?.clone_value(),
+            documentation_link: self.documentation_link().await?.clone_value(),
+            source: {
+                if let Some(s) = *self.source().await? {
+                    Some(s.into_plain().await?)
+                } else {
+                    None
+                }
+            },
+            sub_issues: self
+                .sub_issues()
+                .await?
+                .iter()
+                .map(|i| async move {
+                    anyhow::Ok(i.into_plain(OptionIssueProcessingPathItems::none()).await?)
+                })
+                .try_join()
+                .await?,
+            processing_path: processing_path.into_plain().await?,
+        }
+        .cell())
     }
 }
 
@@ -185,19 +218,17 @@ impl OptionIssueProcessingPathItems {
 
     #[turbo_tasks::function]
     pub async fn into_plain(self: Vc<Self>) -> Result<Vc<PlainIssueProcessingPath>> {
-        Ok(PlainIssueProcessingPath::cell(
-            if let Some(items) = &*self.await? {
-                Some(
-                    items
-                        .iter()
-                        .map(|item| item.into_plain())
-                        .try_join()
-                        .await?,
-                )
-            } else {
-                None
-            },
-        ))
+        Ok(Vc::cell(if let Some(items) = &*self.await? {
+            Some(
+                items
+                    .iter()
+                    .map(|item| item.into_plain())
+                    .try_join()
+                    .await?,
+            )
+        } else {
+            None
+        }))
     }
 }
 
@@ -274,79 +305,20 @@ impl IssueProcessingPath for ItemIssueProcessingPath {
     }
 }
 
-impl Issue {
-    pub fn emit(self) {
-        emit(self);
-        emit(
-            RootIssueProcessingPath::cell(RootIssueProcessingPath(self)).as_issue_processing_path(),
-        )
-    }
+pub trait IssueExt {
+    fn emit(self);
 }
 
-impl Issue {
-    #[allow(unused_variables, reason = "behind feature flag")]
-    pub async fn attach_context<T: CollectiblesSource + Copy + Send>(
-        context: impl Into<Option<Vc<FileSystemPath>>> + Send,
-        description: impl Into<String> + Send,
-        source: T,
-    ) -> Result<T> {
-        #[cfg(feature = "issue_path")]
-        {
-            let children = source.take_collectibles().await?;
-            if !children.is_empty() {
-                emit(
-                    ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
-                        Some(IssueProcessingPathItem::cell(IssueProcessingPathItem {
-                            context: context.into(),
-                            description: Vc::cell(description.into()),
-                        })),
-                        children,
-                    ))
-                    .as_issue_processing_path(),
-                );
-            }
-        }
-        Ok(source)
-    }
-
-    #[allow(unused_variables, reason = "behind feature flag")]
-    pub async fn attach_description<T: CollectiblesSource + Copy + Send>(
-        description: impl Into<String> + Send,
-        source: T,
-    ) -> Result<T> {
-        Vc::<Self>::attach_context(None, description, source).await
-    }
-
-    /// Returns all issues from `source` in a list with their associated
-    /// processing path.
-    pub async fn peek_issues_with_path<T: CollectiblesSource + Copy>(
-        source: T,
-    ) -> Result<Vc<CapturedIssues>> {
-        Ok(CapturedIssues::cell(CapturedIssues {
-            issues: source.peek_collectibles().strongly_consistent().await?,
-            #[cfg(feature = "issue_path")]
-            processing_path: ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
-                None,
-                source.peek_collectibles().strongly_consistent().await?,
-            )),
-        }))
-    }
-
-    /// Returns all issues from `source` in a list with their associated
-    /// processing path.
-    ///
-    /// This unemits the issues. They will not propagate up.
-    pub async fn take_issues_with_path<T: CollectiblesSource + Copy>(
-        source: T,
-    ) -> Result<Vc<CapturedIssues>> {
-        Ok(CapturedIssues::cell(CapturedIssues {
-            issues: source.take_collectibles().strongly_consistent().await?,
-            #[cfg(feature = "issue_path")]
-            processing_path: ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
-                None,
-                source.take_collectibles().strongly_consistent().await?,
-            )),
-        }))
+impl<T> IssueExt for Vc<T>
+where
+    T: Upcast<&'static dyn Issue>,
+{
+    fn emit(self) {
+        let issue = Vc::upcast::<&dyn Issue>(self);
+        emit(issue);
+        emit(Vc::upcast::<&dyn IssueProcessingPath>(
+            RootIssueProcessingPath::cell(RootIssueProcessingPath(issue)),
+        ))
     }
 }
 
@@ -367,13 +339,13 @@ pub struct CapturedIssues {
 impl CapturedIssues {
     #[turbo_tasks::function]
     pub async fn is_empty(self: Vc<Self>) -> Result<Vc<bool>> {
-        Ok(Vc::cell(self.await?.is_empty()))
+        Ok(Vc::cell(self.await?.is_empty_ref()))
     }
 }
 
 impl CapturedIssues {
     /// Returns true if there are no issues.
-    pub fn is_empty(&self) -> bool {
+    pub fn is_empty_ref(&self) -> bool {
         self.issues.is_empty()
     }
 
@@ -456,7 +428,7 @@ impl IssueSource {
                 }
             }
         }
-        Ok(Vc::<Self>::cell(
+        Ok(Self::cell(
             if let FileLinesContent::Lines(lines) = &*asset.content().lines().await? {
                 let start = find_line_and_column(lines.as_ref(), start);
                 let end = find_line_and_column(lines.as_ref(), end);
@@ -546,7 +518,7 @@ impl PlainIssue {
     /// useful for generating exact matching hashes, it's possible for the
     /// same issue to pass from multiple processing paths, making for overly
     /// verbose logging.
-    pub fn internal_hash(&self, full: bool) -> u64 {
+    pub fn internal_hash_ref(&self, full: bool) -> u64 {
         let mut hasher = Xxh3Hash64Hasher::new();
         hash_plain_issue(self, &mut hasher, full);
         hasher.finish()
@@ -565,44 +537,7 @@ impl PlainIssue {
     /// verbose logging.
     #[turbo_tasks::function]
     pub async fn internal_hash(self: Vc<Self>, full: bool) -> Result<Vc<u64>> {
-        Ok(Vc::cell(self.await?.internal_hash(full)))
-    }
-}
-
-#[turbo_tasks::value_impl]
-impl Issue {
-    #[turbo_tasks::function]
-    pub async fn into_plain(
-        self: Vc<Self>,
-        processing_path: Vc<OptionIssueProcessingPathItems>,
-    ) -> Result<Vc<PlainIssue>> {
-        Ok(PlainIssue {
-            severity: *self.severity().await?,
-            context: self.context().to_string().await?.clone_value(),
-            category: self.category().await?.clone_value(),
-            title: self.title().await?.clone_value(),
-            description: self.description().await?.clone_value(),
-            detail: self.detail().await?.clone_value(),
-            documentation_link: self.documentation_link().await?.clone_value(),
-            source: {
-                if let Some(s) = *self.source().await? {
-                    Some(s.into_plain().await?)
-                } else {
-                    None
-                }
-            },
-            sub_issues: self
-                .sub_issues()
-                .await?
-                .iter()
-                .map(|i| async move {
-                    anyhow::Ok(i.into_plain(OptionIssueProcessingPathItems::none()).await?)
-                })
-                .try_join()
-                .await?,
-            processing_path: processing_path.into_plain().await?,
-        }
-        .cell())
+        Ok(Vc::cell(self.await?.internal_hash_ref(full)))
     }
 }
 
@@ -679,12 +614,55 @@ pub trait IssueContextExt
 where
     Self: Sized,
 {
+    #[allow(unused_variables, reason = "behind feature flag")]
+    async fn attach_context<T: CollectiblesSource + Copy + Send>(
+        context: impl Into<Option<Vc<FileSystemPath>>> + Send,
+        description: impl Into<String> + Send,
+        source: T,
+    ) -> Result<T> {
+        #[cfg(feature = "issue_path")]
+        {
+            let children = source.take_collectibles().await?;
+            if !children.is_empty() {
+                emit(Vc::upcast::<&dyn IssueProcessingPath>(
+                    ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
+                        Some(IssueProcessingPathItem::cell(IssueProcessingPathItem {
+                            context: context.into(),
+                            description: Vc::cell(description.into()),
+                        })),
+                        children,
+                    )),
+                ));
+            }
+        }
+        Ok(source)
+    }
+
+    #[allow(unused_variables, reason = "behind feature flag")]
+    async fn attach_description<T: CollectiblesSource + Copy + Send>(
+        source: T,
+
+        description: impl Into<String> + Send,
+    ) -> Result<T> {
+        Vc::<Self>::attach_context(None, description, source).await
+    }
+
     async fn issue_context(
         self,
         context: impl Into<Option<Vc<FileSystemPath>>> + Send,
         description: impl Into<String> + Send,
     ) -> Result<Self>;
     async fn issue_description(self, description: impl Into<String> + Send) -> Result<Self>;
+
+    /// Returns all issues from `source` in a list with their associated
+    /// processing path.
+    async fn peek_issues_with_path(self) -> Result<Vc<CapturedIssues>>;
+
+    /// Returns all issues from `source` in a list with their associated
+    /// processing path.
+    ///
+    /// This unemits the issues. They will not propagate up.
+    async fn take_issues_with_path(self) -> Result<Vc<CapturedIssues>>;
 }
 
 #[async_trait]
@@ -697,9 +675,47 @@ where
         context: impl Into<Option<Vc<FileSystemPath>>> + Send,
         description: impl Into<String> + Send,
     ) -> Result<Self> {
-        Issue::attach_context(context, description, self).await
+        #[cfg(feature = "issue_path")]
+        {
+            let children = self.take_collectibles().await?;
+            if !children.is_empty() {
+                emit(Vc::upcast::<&dyn IssueProcessingPath>(
+                    ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
+                        Some(IssueProcessingPathItem::cell(IssueProcessingPathItem {
+                            context: context.into(),
+                            description: Vc::cell(description.into()),
+                        })),
+                        children,
+                    )),
+                ));
+            }
+        }
+        Ok(self)
     }
+
     async fn issue_description(self, description: impl Into<String> + Send) -> Result<Self> {
-        Issue::attach_description(description, self).await
+        self.issue_context(None, description).await
+    }
+
+    async fn peek_issues_with_path(self) -> Result<Vc<CapturedIssues>> {
+        Ok(CapturedIssues::cell(CapturedIssues {
+            issues: self.peek_collectibles().strongly_consistent().await?,
+            #[cfg(feature = "issue_path")]
+            processing_path: ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
+                None,
+                self.peek_collectibles().strongly_consistent().await?,
+            )),
+        }))
+    }
+
+    async fn take_issues_with_path(self) -> Result<Vc<CapturedIssues>> {
+        Ok(CapturedIssues::cell(CapturedIssues {
+            issues: self.take_collectibles().strongly_consistent().await?,
+            #[cfg(feature = "issue_path")]
+            processing_path: ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
+                None,
+                self.take_collectibles().strongly_consistent().await?,
+            )),
+        }))
     }
 }

@@ -505,7 +505,7 @@ impl DiskFileSystem {
             watcher: Default::default(),
         };
 
-        Ok(Vc::<Self>::cell(instance))
+        Ok(Self::cell(instance))
     }
 }
 
@@ -975,7 +975,7 @@ impl FileSystemPath {
             "path {} must be normalized",
             path,
         );
-        Vc::<Self>::cell(FileSystemPath { fs, path })
+        Self::cell(FileSystemPath { fs, path })
     }
 
     /// Adds a subpath to the current path. The /-separate path argument might
@@ -1006,7 +1006,7 @@ impl FileSystemPath {
                 path
             )
         }
-        Ok(Vc::<Self>::new_normalized(
+        Ok(Self::new_normalized(
             this.fs,
             format!("{}{}", this.path, path),
         ))
@@ -1028,13 +1028,13 @@ impl FileSystemPath {
             // check if `ext` is a real extension, and not a "." in a directory name or a
             // .dotfile
             if !(ext.contains('/') || (path.ends_with('/') && !path.is_empty())) {
-                return Ok(Vc::<Self>::new_normalized(
+                return Ok(Self::new_normalized(
                     this.fs,
                     format!("{}{}.{}", path, appending, ext),
                 ));
             }
         }
-        Ok(Vc::<Self>::new_normalized(
+        Ok(Self::new_normalized(
             this.fs,
             format!("{}{}", this.path, appending),
         ))
@@ -1047,7 +1047,7 @@ impl FileSystemPath {
         let this = self.await?;
         if let Some(path) = join_path(&this.path, &path) {
             Ok(Vc::cell(Some(
-                Vc::<Self>::new_normalized(this.fs, path).resolve().await?,
+                Self::new_normalized(this.fs, path).resolve().await?,
             )))
         } else {
             Ok(Vc::cell(None))
@@ -1062,7 +1062,7 @@ impl FileSystemPath {
         if let Some(path) = join_path(&this.path, &path) {
             if path.starts_with(&this.path) {
                 return Ok(Vc::cell(Some(
-                    Vc::<Self>::new_normalized(this.fs, path).resolve().await?,
+                    Self::new_normalized(this.fs, path).resolve().await?,
                 )));
             }
         }
@@ -1897,11 +1897,11 @@ pub enum DirectoryContent {
 
 impl DirectoryContent {
     pub fn new(entries: AutoMap<String, DirectoryEntry>) -> Vc<Self> {
-        Vc::<Self>::cell(DirectoryContent::Entries(entries))
+        Self::cell(DirectoryContent::Entries(entries))
     }
 
     pub fn not_found() -> Vc<Self> {
-        Vc::<Self>::cell(DirectoryContent::NotFound)
+        Self::cell(DirectoryContent::NotFound)
     }
 }
 

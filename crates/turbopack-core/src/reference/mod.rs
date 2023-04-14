@@ -11,7 +11,6 @@ use crate::{
 pub mod source_map;
 
 pub use source_map::SourceMapReference;
-use turbo_tasks::Vc;
 
 /// A reference to one or multiple [Asset]s or other special things.
 /// There are a bunch of optional traits that can influence how these references
@@ -48,7 +47,7 @@ pub struct SingleAssetReference {
 
 impl SingleAssetReference {
     /// Returns the asset that this reference resolves to.
-    pub fn asset(&self) -> Vc<Box<dyn Asset>> {
+    pub fn asset_ref(&self) -> Vc<Box<dyn Asset>> {
         self.asset
     }
 }
@@ -75,7 +74,7 @@ impl SingleAssetReference {
     /// asset.
     #[turbo_tasks::function]
     pub fn new(asset: Vc<Box<dyn Asset>>, description: Vc<String>) -> Vc<Self> {
-        Vc::<Self>::cell(SingleAssetReference { asset, description })
+        Self::cell(SingleAssetReference { asset, description })
     }
 
     /// The [Vc<Box<dyn Asset>>] that this reference resolves to.
@@ -115,7 +114,7 @@ pub async fn all_referenced_assets(asset: Vc<Box<dyn Asset>>) -> Result<Vc<Asset
             queue.push_back(reference.resolve_reference());
         }
     }
-    Ok(Assets::cell(assets))
+    Ok(Vc::cell(assets))
 }
 
 /// Aggregates all primary [Asset]s referenced by an [Asset]. [AssetReference]
@@ -147,7 +146,7 @@ pub async fn primary_referenced_assets(asset: Vc<Box<dyn Asset>>) -> Result<Vc<A
         .into_iter()
         .flatten()
         .collect();
-    Ok(Assets::cell(assets))
+    Ok(Vc::cell(assets))
 }
 
 /// Aggregates all [Asset]s referenced by an [Asset] including transitively
@@ -170,5 +169,5 @@ pub async fn all_assets(asset: Vc<Box<dyn Asset>>) -> Result<Vc<Assets>> {
             }
         }
     }
-    Ok(Assets::cell(assets.into_iter().collect()))
+    Ok(Vc::cell(assets.into_iter().collect()))
 }

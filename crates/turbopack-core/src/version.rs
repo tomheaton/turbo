@@ -14,18 +14,15 @@ use crate::asset::AssetContent;
 #[turbo_tasks::value_trait]
 pub trait VersionedContent {
     /// The content of the [Asset].
-    fn content(&self) -> Vc<AssetContent>;
+    fn content(self: Vc<Self>) -> Vc<AssetContent>;
 
     /// Get a [`Version`] implementor that contains enough information to
     /// identify and diff a future [`VersionedContent`] against it.
-    fn version(&self) -> Vc<Box<dyn Version>>;
+    fn version(self: Vc<Self>) -> Vc<Box<dyn Version>>;
 
     /// Describes how to update the content from an earlier version to the
     /// latest available one.
-    async fn update(
-        self: Vc<Box<dyn VersionedContent>>,
-        from: Vc<Box<dyn Version>>,
-    ) -> Result<Vc<Update>> {
+    async fn update(self: Vc<Self>, from: Vc<Box<dyn Version>>) -> Result<Vc<Update>> {
         // By default, since we can't make any assumptions about the versioning
         // scheme of the content, we ask for a full invalidation, except in the
         // case where versions are the same.
@@ -80,7 +77,9 @@ impl VersionedContent for VersionedAssetContent {
 
     #[turbo_tasks::function]
     async fn version(&self) -> Result<Vc<Box<dyn Version>>> {
-        Ok(FileHashVersion::compute(&self.asset_content).await?.into())
+        Ok(Vc::upcast(
+            FileHashVersion::compute(&self.asset_content).await?,
+        ))
     }
 }
 
@@ -90,7 +89,7 @@ impl VersionedAssetContent {
     /// Creates a new [Vc<VersionedAssetContent>] from a [Vc<FileContent>].
     pub async fn new(asset_content: Vc<AssetContent>) -> Result<Vc<Self>> {
         let asset_content = asset_content.strongly_consistent().await?;
-        Ok(Vc::<Self>::cell(VersionedAssetContent { asset_content }))
+        Ok(Self::cell(VersionedAssetContent { asset_content }))
     }
 }
 
@@ -108,13 +107,13 @@ impl From<Vc<AssetContent>> for Vc<VersionedAssetContent> {
 
 impl From<AssetContent> for Vc<Box<dyn VersionedContent>> {
     fn from(asset_content: AssetContent) -> Self {
-        VersionedAssetContent::new(asset_content.cell()).into()
+        Vc::upcast(VersionedAssetContent::new(asset_content.cell()))
     }
 }
 
 impl From<Vc<AssetContent>> for Vc<Box<dyn VersionedContent>> {
     fn from(asset_content: Vc<AssetContent>) -> Self {
-        VersionedAssetContent::new(asset_content).into()
+        Vc::upcast(VersionedAssetContent::new(asset_content))
     }
 }
 
@@ -163,7 +162,7 @@ impl NotFoundVersion {
 impl Version for NotFoundVersion {
     #[turbo_tasks::function]
     fn id(&self) -> Vc<String> {
-        String::empty()
+        Vc::cell("".to_string())
     }
 }
 
@@ -188,7 +187,7 @@ pub enum Update {
 pub struct TotalUpdate {
     /// The version this update will bring the object to.
     #[turbo_tasks(trace_ignore)]
-    pub to: TraitRef<Vc<Box<dyn Version>>>,
+    pub to: TraitRef<Box<dyn Version>>,
 }
 
 /// A partial update to a versioned object.
@@ -196,7 +195,7 @@ pub struct TotalUpdate {
 pub struct PartialUpdate {
     /// The version this update will bring the object to.
     #[turbo_tasks(trace_ignore)]
-    pub to: TraitRef<Vc<Box<dyn Version>>>,
+    pub to: TraitRef<Box<dyn Version>>,
     /// The instructions to be passed to a remote system in order to update the
     /// versioned object.
     #[turbo_tasks(trace_ignore)]
@@ -219,7 +218,7 @@ impl FileHashVersion {
                 FileContent::Content(file) => {
                     let hash = hash_xxh3_hash64(file.content());
                     let hex_hash = encode_hex(hash);
-                    Ok(Vc::<Self>::cell(FileHashVersion { hash: hex_hash }))
+                    Ok(Self::cell(FileHashVersion { hash: hex_hash }))
                 }
                 FileContent::NotFound => Err(anyhow!("file not found")),
             },

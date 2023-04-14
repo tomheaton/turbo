@@ -11,7 +11,7 @@ pub struct VirtualFileSystem;
 impl VirtualFileSystem {
     #[turbo_tasks::function]
     pub fn new() -> Vc<Self> {
-        Vc::<Self>::cell(VirtualFileSystem)
+        Self::cell(VirtualFileSystem)
     }
 }
 

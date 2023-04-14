@@ -1,4 +1,3 @@
-use anyhow::Result;
 use turbo_tasks::Vc;
 use turbo_tasks_fs::FileSystemPath;
 
@@ -18,7 +17,7 @@ pub struct VirtualAsset {
 impl VirtualAsset {
     #[turbo_tasks::function]
     pub fn new(path: Vc<FileSystemPath>, content: Vc<AssetContent>) -> Vc<Self> {
-        Vc::<Self>::cell(VirtualAsset {
+        Self::cell(VirtualAsset {
             ident: AssetIdent::from_path(path),
             content,
         })
@@ -26,7 +25,7 @@ impl VirtualAsset {
 
     #[turbo_tasks::function]
     pub fn new_with_ident(ident: Vc<AssetIdent>, content: Vc<AssetContent>) -> Vc<Self> {
-        Vc::<Self>::cell(VirtualAsset { ident, content })
+        Self::cell(VirtualAsset { ident, content })
     }
 }
 

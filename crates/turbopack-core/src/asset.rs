@@ -25,7 +25,7 @@ impl Assets {
     /// Creates an empty list of [Asset]s
     #[turbo_tasks::function]
     pub fn empty() -> Vc<Self> {
-        Assets::cell(Vec::new())
+        Vc::cell(Vec::new())
     }
 }
 
@@ -34,19 +34,19 @@ impl Assets {
 pub trait Asset {
     /// The identifier of the [Asset]. It's expected to be unique and capture
     /// all properties of the [Asset].
-    fn ident(&self) -> Vc<AssetIdent>;
+    fn ident(self: Vc<Self>) -> Vc<AssetIdent>;
 
     /// The content of the [Asset].
-    fn content(&self) -> Vc<AssetContent>;
+    fn content(self: Vc<Self>) -> Vc<AssetContent>;
 
     /// Other things (most likely [Asset]s) referenced from this [Asset].
-    fn references(&self) -> Vc<AssetReferences> {
+    fn references(self: Vc<Self>) -> Vc<AssetReferences> {
         AssetReferences::empty()
     }
 
     /// The content of the [Asset] alongside its version.
-    async fn versioned_content(&self) -> Result<Vc<Box<dyn VersionedContent>>> {
-        Ok(VersionedAssetContent::new(self.content()).into())
+    async fn versioned_content(self: Vc<Self>) -> Result<Vc<Box<dyn VersionedContent>>> {
+        Ok(Vc::upcast(VersionedAssetContent::new(self.content())))
     }
 }
 
@@ -64,21 +64,15 @@ pub enum AssetContent {
     Redirect { target: String, link_type: LinkType },
 }
 
-impl From<Vc<FileContent>> for Vc<AssetContent> {
-    fn from(content: Vc<FileContent>) -> Self {
-        AssetContent::File(content).cell()
-    }
-}
-
-impl From<FileContent> for Vc<AssetContent> {
+impl From<FileContent> for AssetContent {
     fn from(content: FileContent) -> Self {
-        AssetContent::File(content.cell()).cell()
+        AssetContent::File(content.cell())
     }
 }
 
-impl From<File> for Vc<AssetContent> {
+impl From<File> for AssetContent {
     fn from(file: File) -> Self {
-        AssetContent::File(file.into()).cell()
+        AssetContent::File(file.into())
     }
 }
 

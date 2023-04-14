@@ -4,6 +4,8 @@
 #![feature(type_alias_impl_trait)]
 #![feature(assert_matches)]
 #![feature(lint_reasons)]
+#![feature(async_fn_in_trait)]
+#![feature(arbitrary_self_types)]
 
 pub mod asset;
 pub mod changed;

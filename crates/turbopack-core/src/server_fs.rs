@@ -11,7 +11,7 @@ pub struct ServerFileSystem {}
 impl ServerFileSystem {
     #[turbo_tasks::function]
     pub fn new() -> Vc<Self> {
-        Vc::<Self>::cell(ServerFileSystem {})
+        Self::cell(ServerFileSystem {})
     }
 }
 

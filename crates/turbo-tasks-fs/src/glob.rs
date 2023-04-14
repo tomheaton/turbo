@@ -356,7 +356,7 @@ impl TryFrom<&str> for Glob {
 impl Glob {
     #[turbo_tasks::function]
     pub fn new(glob: String) -> Result<Vc<Self>> {
-        Ok(Vc::<Self>::cell(Glob::try_from(glob.as_str())?))
+        Ok(Self::cell(Glob::try_from(glob.as_str())?))
     }
 }
 

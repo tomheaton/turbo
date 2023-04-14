@@ -15,7 +15,7 @@ pub struct SourceMapReference {
 impl SourceMapReference {
     #[turbo_tasks::function]
     pub fn new(from: Vc<FileSystemPath>, file: Vc<FileSystemPath>) -> Vc<Self> {
-        Vc::<Self>::cell(SourceMapReference { from, file })
+        Self::cell(SourceMapReference { from, file })
     }
 }
 
@@ -26,7 +26,7 @@ impl AssetReference for SourceMapReference {
         let file_type = self.file.get_type().await;
         if let Ok(file_type_result) = file_type.as_ref() {
             if let FileSystemEntryType::File = &**file_type_result {
-                return ResolveResult::asset(SourceAsset::new(self.file).into()).into();
+                return ResolveResult::asset(Vc::upcast(SourceAsset::new(self.file))).into();
             }
         }
         ResolveResult::unresolveable().into()

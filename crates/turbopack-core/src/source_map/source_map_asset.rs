@@ -33,13 +33,13 @@ impl Asset for SourceMapAsset {
         // NOTE(alexkirsz) We used to include the asset's version id in the path,
         // but this caused `all_assets_map` to be recomputed on every change.
         Ok(AssetIdent::from_path(
-            self.asset.ident().path().append(".map"),
+            self.asset.ident().path().append(".map".to_string()),
         ))
     }
 
     #[turbo_tasks::function]
     async fn content(&self) -> Result<Vc<AssetContent>> {
-        let Some(generate_source_map) = Vc::try_resolve_sidecast::<&dyn GenerateSourceMap>(&self.asset).await? else {
+        let Some(generate_source_map) = Vc::try_resolve_sidecast::<&dyn GenerateSourceMap>(self.asset).await? else {
             bail!("asset does not support generating source maps")
         };
         let sm = if let Some(sm) = &*generate_source_map.generate_source_map().await? {
@@ -48,7 +48,7 @@ impl Asset for SourceMapAsset {
             SourceMap::empty()
         };
         let sm = sm.to_rope().await?;
-        Ok(File::from(sm).into())
+        Ok(AssetContent::cell(File::from(sm).into()))
     }
 }
 
@@ -108,7 +108,7 @@ impl SourceMapAssetReference {
 impl AssetReference for SourceMapAssetReference {
     #[turbo_tasks::function]
     async fn resolve_reference(&self) -> Result<Vc<ResolveResult>> {
-        let asset = SourceMapAsset::new(self.asset).into();
+        let asset = Vc::upcast(SourceMapAsset::new(self.asset));
         Ok(ResolveResult::asset(asset).cell())
     }
 }

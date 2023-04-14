@@ -82,7 +82,7 @@ impl Request {
         })
     }
 
-    pub fn parse(mut request: Pattern) -> Self {
+    pub fn parse_ref(mut request: Pattern) -> Self {
         request.normalize();
         match request {
             Pattern::Dynamic => Request::Dynamic,
@@ -137,7 +137,7 @@ impl Request {
             Pattern::Concatenation(list) => {
                 let mut iter = list.into_iter();
                 if let Some(first) = iter.next() {
-                    let mut result = Self::parse(first);
+                    let mut result = Self::parse_ref(first);
                     match &mut result {
                         Request::Raw { path, .. } => {
                             path.extend(iter);
@@ -159,7 +159,7 @@ impl Request {
                             path.extend(iter);
                         }
                         Request::Empty => {
-                            result = Request::parse(Pattern::Concatenation(iter.collect()))
+                            result = Request::parse_ref(Pattern::Concatenation(iter.collect()))
                         }
                         Request::PackageInternal { path } => {
                             path.extend(iter);
@@ -192,17 +192,17 @@ impl Request {
 impl Request {
     #[turbo_tasks::function]
     pub fn parse(request: Value<Pattern>) -> Vc<Self> {
-        Vc::<Self>::cell(Request::parse(request.into_value()))
+        Self::cell(Request::parse_ref(request.into_value()))
     }
 
     #[turbo_tasks::function]
     pub fn parse_string(request: String) -> Vc<Self> {
-        Vc::<Self>::cell(Request::parse(request.into()))
+        Self::cell(Request::parse_ref(request.into()))
     }
 
     #[turbo_tasks::function]
     pub fn raw(request: Value<Pattern>, force_in_context: bool) -> Vc<Self> {
-        Vc::<Self>::cell(Request::Raw {
+        Self::cell(Request::Raw {
             path: request.into_value(),
             force_in_context,
         })
@@ -210,7 +210,7 @@ impl Request {
 
     #[turbo_tasks::function]
     pub fn relative(request: Value<Pattern>, force_in_context: bool) -> Vc<Self> {
-        Vc::<Self>::cell(Request::Relative {
+        Self::cell(Request::Relative {
             path: request.into_value(),
             force_in_context,
         })
@@ -218,7 +218,7 @@ impl Request {
 
     #[turbo_tasks::function]
     pub fn module(module: String, path: Value<Pattern>, query: Vc<QueryMap>) -> Vc<Self> {
-        Vc::<Self>::cell(Request::Module {
+        Self::cell(Request::Module {
             module,
             path: path.into_value(),
             query,
@@ -244,17 +244,17 @@ impl Request {
                 let mut pat = Pattern::Constant(format!("./{module}"));
                 pat.push(path.clone());
                 // TODO add query
-                Vc::<Self>::parse(Value::new(pat))
+                Self::parse(Value::new(pat))
             }
             Request::PackageInternal { path } => {
                 let mut pat = Pattern::Constant("./".to_string());
                 pat.push(path.clone());
-                Vc::<Self>::parse(Value::new(pat))
+                Self::parse(Value::new(pat))
             }
             Request::Unknown { path } => {
                 let mut pat = Pattern::Constant("./".to_string());
                 pat.push(path.clone());
-                Vc::<Self>::parse(Value::new(pat))
+                Self::parse(Value::new(pat))
             }
             Request::Alternatives { requests } => {
                 let requests = requests.iter().copied().map(Request::as_relative).collect();

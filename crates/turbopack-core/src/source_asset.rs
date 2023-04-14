@@ -19,7 +19,7 @@ pub struct SourceAsset {
 impl SourceAsset {
     #[turbo_tasks::function]
     pub fn new(path: Vc<FileSystemPath>) -> Vc<Self> {
-        Vc::<Self>::cell(SourceAsset { path })
+        Self::cell(SourceAsset { path })
     }
 }
 

@@ -15,18 +15,26 @@ use crate::{
 #[turbo_tasks::value_trait]
 pub trait EvaluatableAsset: Asset + ChunkableAsset {}
 
-#[turbo_tasks::value_impl]
-impl EvaluatableAsset {
-    #[turbo_tasks::function]
-    pub async fn from_asset(
-        asset: Vc<Box<dyn Asset>>,
+#[turbo_tasks::value_trait]
+pub trait EvaluatableAssetExt {
+    async fn to_evaluatable(
+        self: Vc<Self>,
         context: Vc<Box<dyn AssetContext>>,
-    ) -> Result<Vc<EvaluatableAsset>> {
+    ) -> Result<Vc<Box<dyn EvaluatableAsset>>>;
+}
+
+#[turbo_tasks::value_impl]
+impl EvaluatableAssetExt for Box<dyn Asset> {
+    #[turbo_tasks::function]
+    pub async fn to_evaluatable(
+        self: Vc<Self>,
+        context: Vc<Box<dyn AssetContext>>,
+    ) -> Result<Vc<Box<dyn EvaluatableAsset>>> {
         let asset = context.process(
-            asset,
+            self,
             Value::new(ReferenceType::Entry(EntryReferenceSubType::Runtime)),
         );
-        let Some(entry) = Vc::try_resolve_downcast::<EvaluatableAsset>(asset).await? else {
+        let Some(entry) = Vc::try_resolve_downcast::<&dyn EvaluatableAsset>(asset).await? else {
             bail!("{} is not a valid evaluated entry", asset.ident().to_string().await?)
         };
         Ok(entry)
@@ -34,7 +42,7 @@ impl EvaluatableAsset {
 }
 
 #[turbo_tasks::value(transparent)]
-pub struct EvaluatableAssets(Vec<Vc<EvaluatableAsset>>);
+pub struct EvaluatableAssets(Vec<Vc<Box<dyn EvaluatableAsset>>>);
 
 #[turbo_tasks::value_impl]
 impl EvaluatableAssets {
@@ -44,14 +52,14 @@ impl EvaluatableAssets {
     }
 
     #[turbo_tasks::function]
-    pub fn one(entry: Vc<EvaluatableAsset>) -> Vc<EvaluatableAssets> {
+    pub fn one(entry: Vc<Box<dyn EvaluatableAsset>>) -> Vc<EvaluatableAssets> {
         EvaluatableAssets(vec![entry]).cell()
     }
 
     #[turbo_tasks::function]
     pub async fn with_entry(
         self: Vc<Self>,
-        entry: Vc<EvaluatableAsset>,
+        entry: Vc<Box<dyn EvaluatableAsset>>,
     ) -> Result<Vc<EvaluatableAssets>> {
         let mut entries = self.await?.clone_value();
         entries.push(entry);

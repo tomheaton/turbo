@@ -10,10 +10,10 @@ pub struct IntrospectableChildren(IndexSet<(Vc<String>, Vc<Box<dyn Introspectabl
 pub trait Introspectable {
     fn ty(self: Vc<Self>) -> Vc<String>;
     fn title(self: Vc<Self>) -> Vc<String> {
-        String::empty()
+        Vc::<String>::empty()
     }
     fn details(self: Vc<Self>) -> Vc<String> {
-        String::empty()
+        Vc::<String>::empty()
     }
     fn children(self: Vc<Self>) -> Vc<IntrospectableChildren> {
         Vc::cell(IndexSet::new())
