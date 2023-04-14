@@ -14,7 +14,7 @@ pub async fn directory_from_relative_path(
     let disk_fs = DiskFileSystem::new(name.to_string(), path);
     disk_fs.await?.start_watching()?;
 
-    Ok(disk_fs.into())
+    Ok(Vc::upcast(disk_fs))
 }
 
 #[turbo_tasks::function]
@@ -22,7 +22,7 @@ pub async fn directory_from_include_dir(
     name: String,
     dir: TransientInstance<&'static include_dir::Dir<'static>>,
 ) -> Result<Vc<Box<dyn FileSystem>>> {
-    Ok(EmbeddedFileSystem::new(name.to_string(), dir).into())
+    Ok(Vc::upcast(EmbeddedFileSystem::new(name.to_string(), dir)))
 }
 
 /// Returns an embedded [Vc<Box<dyn FileSystem>>] for the given path.
