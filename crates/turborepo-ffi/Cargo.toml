@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 license = "MPL-2.0"
 
+[features]
+default = ["rustls-tls"]
+native-tls = ["turborepo-cache/native-tls", "turborepo-api-client/native-tls"]
+rustls-tls = ["turborepo-cache/rustls-tls", "turborepo-api-client/rustls-tls"]
+
 [lib]
 crate-type = ["staticlib"]
 

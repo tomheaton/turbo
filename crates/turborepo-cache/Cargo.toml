@@ -4,9 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+native-tls = ["turborepo-api-client/native-tls"]
+rustls-tls = ["turborepo-api-client/rustls-tls"]
+
 
 [dev-dependencies]
-anyhow = { workspace = true }
+anyhow = { workspace = true, features = ["backtrace"] }
 env_logger = "0.10.0"
 tempfile = { workspace = true }
 
@@ -16,7 +20,6 @@ bytes.workspace = true
 chrono = { workspace = true }
 dunce = { workspace = true }
 lazy_static = { workspace = true }
-log.workspace = true
 os_str_bytes = "6.5.0"
 ring = "0.16.20"
 serde = { workspace = true, features = ["derive"] }

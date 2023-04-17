@@ -1,4 +1,8 @@
-use std::{fmt::Debug, io::Write};
+use std::{
+    fmt::Debug,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use bstr::{BString, ByteSlice};
 
@@ -16,7 +20,7 @@ impl RelativeUnixPathBuf {
         Ok(Self(BString::new(bytes)))
     }
 
-    pub fn as_str(&self) -> Result<&str, PathError> {
+    pub fn to_str(&self) -> Result<&str, PathError> {
         let s = self
             .0
             .to_str()

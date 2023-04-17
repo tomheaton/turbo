@@ -82,18 +82,22 @@ func (c *APIClient) IsLinked() bool {
 	return c.hasUser() && (c.teamID != "" || c.teamSlug != "")
 }
 
-func (c *APIClient) GetBaseUrl() string {
+// GetBaseURL gets the base URL for the API client
+func (c *APIClient) GetBaseURL() string {
 	return c.baseURL
 }
 
+// GetTimeout gets the timeout for the API client
 func (c *APIClient) GetTimeout() uint64 {
 	return uint64(c.HTTPClient.HTTPClient.Timeout.Seconds())
 }
 
+// GetVersion gets the turbo version for the API client
 func (c *APIClient) GetVersion() string {
 	return c.turboVersion
 }
 
+// GetToken returns the currently configured token
 func (c *APIClient) GetToken() string {
 	return c.token
 }
@@ -103,10 +107,12 @@ func (c *APIClient) GetTeamID() string {
 	return c.teamID
 }
 
+// GetTeamSlug returns the currently configured team slug
 func (c *APIClient) GetTeamSlug() string {
 	return c.teamSlug
 }
 
+// GetUsePreflight returns whether we do a preflight request in the APIClient
 func (c *APIClient) GetUsePreflight() bool {
 	return c.usePreflight
 }

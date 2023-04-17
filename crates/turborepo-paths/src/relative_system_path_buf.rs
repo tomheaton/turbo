@@ -6,7 +6,7 @@ use std::{
 
 use serde::Serialize;
 
-use crate::{IntoSystem, PathValidationError};
+use crate::{AnchoredSystemPathBuf, IntoSystem, PathValidationError};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize)]
 pub struct RelativeSystemPathBuf(PathBuf);
@@ -39,7 +39,6 @@ impl RelativeSystemPathBuf {
             let bad_path = unchecked_path.display().to_string();
             return Err(PathValidationError::NotRelative(bad_path));
         }
-
         let system_path = unchecked_path.into_system()?;
         Ok(RelativeSystemPathBuf(system_path))
     }
@@ -119,5 +118,11 @@ impl AsRef<RelativeSystemPathBuf> for RelativeSystemPathBuf {
 impl Into<PathBuf> for RelativeSystemPathBuf {
     fn into(self) -> PathBuf {
         self.0
+    }
+}
+
+impl Into<AnchoredSystemPathBuf> for RelativeSystemPathBuf {
+    fn into(self) -> AnchoredSystemPathBuf {
+        AnchoredSystemPathBuf::unchecked_new(self.0)
     }
 }

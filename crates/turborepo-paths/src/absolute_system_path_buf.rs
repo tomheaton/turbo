@@ -220,6 +220,10 @@ impl AbsoluteSystemPathBuf {
         self.0.to_string_lossy()
     }
 
+    pub fn to_path_buf(&self) -> PathBuf {
+        self.0.clone()
+    }
+
     pub fn file_name(&self) -> Option<&OsStr> {
         self.0.file_name()
     }

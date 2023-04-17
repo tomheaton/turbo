@@ -7,12 +7,12 @@ package ffi
 
 // #include "bindings.h"
 //
-// #cgo darwin,arm64 LDFLAGS:  -L${SRCDIR} -lturborepo_ffi_darwin_arm64  -lz -liconv
-// #cgo darwin,amd64 LDFLAGS:  -L${SRCDIR} -lturborepo_ffi_darwin_amd64  -lz -liconv
+// #cgo darwin,arm64 LDFLAGS:  -L${SRCDIR} -lturborepo_ffi_darwin_arm64  -lz -liconv -framework CoreFoundation
+// #cgo darwin,amd64 LDFLAGS:  -L${SRCDIR} -lturborepo_ffi_darwin_amd64  -lz -liconv -framework CoreFoundation
 // #cgo linux,arm64,staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_arm64 -lunwind
 // #cgo linux,amd64,staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_amd64 -lunwind
-// #cgo linux,arm64,!staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_arm64 -lz
-// #cgo linux,amd64,!staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_amd64 -lz
+// #cgo linux,arm64,!staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_arm64 -lz -lm
+// #cgo linux,amd64,!staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_amd64 -lz -lm
 // #cgo windows,amd64 LDFLAGS: -L${SRCDIR} -lturborepo_ffi_windows_amd64 -lole32 -lbcrypt -lws2_32 -luserenv
 import "C"
 
@@ -117,7 +117,7 @@ func StringToRef(s string) *string {
 	return &s
 }
 
-// Same as `StringToRef`, but for uint64
+// Uint64ToRef is the same as `StringToRef`, but for uint64
 func Uint64ToRef(i uint64) *uint64 {
 	if i == 0 {
 		return nil
@@ -346,13 +346,13 @@ func GetPackageFileHashesFromGitIndex(rootPath string, packagePath string) (map[
 	return hashes.GetHashes(), nil
 }
 
-func HttpCache__Retrieve(hash string, baseUrl string, timeout uint64, version string, token string, teamId string, teamSlug string, usePreflight bool, hasAuthenticator bool, repoRoot turbopath.AbsoluteSystemPath) (bool, []turbopath.AnchoredSystemPath, uint64, error) {
+func HTTPCacheRetrieve(hash string, baseURL string, timeout uint64, version string, token string, teamID string, teamSlug string, usePreflight bool, hasAuthenticator bool, repoRoot turbopath.AbsoluteSystemPath) (bool, []turbopath.AnchoredSystemPath, int, error) {
 	apiClientReq := ffi_proto.NewAPIClientRequest{
-		BaseUrl:      baseUrl,
+		BaseUrl:      baseURL,
 		Timeout:      Uint64ToRef(timeout),
 		Version:      version,
 		Token:        token,
-		TeamId:       teamId,
+		TeamId:       teamID,
 		TeamSlug:     StringToRef(teamSlug),
 		UsePreflight: usePreflight,
 	}
@@ -360,7 +360,7 @@ func HttpCache__Retrieve(hash string, baseUrl string, timeout uint64, version st
 	var authenticator *ffi_proto.NewArtifactSignatureAuthenticatorRequest
 	if hasAuthenticator {
 		authenticator = &ffi_proto.NewArtifactSignatureAuthenticatorRequest{
-			TeamId: teamId,
+			TeamId: teamID,
 		}
 	}
 

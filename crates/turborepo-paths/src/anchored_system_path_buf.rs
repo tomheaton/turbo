@@ -2,7 +2,10 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AbsoluteSystemPath, IntoSystem, PathError, PathValidationError, RelativeUnixPathBuf};
+use crate::{
+    AbsoluteSystemPath, IntoSystem, PathError, PathValidationError, RelativeSystemPathBuf,
+    RelativeUnixPathBuf,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
 pub struct AnchoredSystemPathBuf(PathBuf);
@@ -36,10 +39,8 @@ impl AnchoredSystemPathBuf {
         Ok(AnchoredSystemPathBuf(stripped_path))
     }
 
-    pub fn from_raw<P: AsRef<Path>>(raw: P) -> Result<Self, PathError> {
-        let system_path = raw.as_ref();
-        let system_path = system_path.into_system()?;
-        Ok(Self(system_path))
+    pub(crate) fn unchecked_new(path: impl Into<PathBuf>) -> Self {
+        AnchoredSystemPathBuf(path.into())
     }
 
     pub fn as_path(&self) -> &Path {
@@ -74,5 +75,17 @@ impl AnchoredSystemPathBuf {
 impl From<AnchoredSystemPathBuf> for PathBuf {
     fn from(path: AnchoredSystemPathBuf) -> PathBuf {
         path.0
+    }
+}
+
+impl Into<RelativeSystemPathBuf> for AnchoredSystemPathBuf {
+    fn into(self) -> RelativeSystemPathBuf {
+        RelativeSystemPathBuf::unchecked_new(self.0)
+    }
+}
+
+impl AsRef<Path> for AnchoredSystemPathBuf {
+    fn as_ref(&self) -> &Path {
+        self.0.as_path()
     }
 }

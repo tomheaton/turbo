@@ -228,7 +228,7 @@ impl APIClient {
         };
 
         let response = self
-            .make_retryable_request(|| {
+            .make_retryable_request(async || {
                 let request_builder = self
                     .client
                     .get(self.make_url(endpoint.as_str()))
@@ -236,19 +236,12 @@ impl APIClient {
                     .header("Content-Type", "application/json")
                     .header("Authorization", format!("Bearer {}", token));
 
-                request_builder.send()
+                Ok(request_builder.send().await?)
             })
             .await?
             .error_for_status()?;
 
-        response.json().await.map_err(|err| {
-            anyhow!(
-                "Error getting spaces: {}",
-                err.status()
-                    .and_then(|status| status.canonical_reason())
-                    .unwrap_or(&err.to_string())
-            )
-        })
+        Ok(response.json().await?)
     }
 
     pub async fn verify_sso_token(&self, token: &str, token_name: &str) -> Result<VerifiedSsoUser> {
