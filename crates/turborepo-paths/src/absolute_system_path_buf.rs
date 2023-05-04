@@ -13,7 +13,7 @@ use crate::{
     RelativeSystemPathBuf,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct AbsoluteSystemPathBuf(pub(crate) PathBuf);
 
 impl Borrow<AbsoluteSystemPath> for AbsoluteSystemPathBuf {
@@ -66,6 +66,11 @@ impl AbsoluteSystemPathBuf {
 
         let system_path = unchecked_path.into_system()?;
         Ok(AbsoluteSystemPathBuf(system_path))
+    }
+
+    #[cfg(test)]
+    pub unsafe fn new_unchecked(unchecked_path: impl Into<PathBuf>) -> Self {
+        AbsoluteSystemPathBuf(unchecked_path.into())
     }
 
     /// Anchors `path` at `self`.
@@ -146,10 +151,10 @@ impl AbsoluteSystemPathBuf {
         self.0.components()
     }
 
-    pub fn parent(&self) -> Option<Self> {
+    pub fn parent(&self) -> Option<&AbsoluteSystemPath> {
         self.0
             .parent()
-            .map(|p| AbsoluteSystemPathBuf(p.to_path_buf()))
+            .map(|p| unsafe { AbsoluteSystemPath::new_unchecked(p) })
     }
 
     pub fn starts_with<P: AsRef<Path>>(&self, base: P) -> bool {
@@ -164,8 +169,8 @@ impl AbsoluteSystemPathBuf {
         AbsoluteSystemPathBuf(self.0.join(path.as_ref()))
     }
 
-    pub fn join_literal(&self, segment: &str) -> Self {
-        AbsoluteSystemPathBuf(self.0.join(segment))
+    pub fn join_component(&self, component: impl AsRef<Path>) -> AbsoluteSystemPathBuf {
+        AbsoluteSystemPathBuf(self.0.join(component))
     }
 
     pub fn join_unix_path_literal<S: AsRef<str>>(

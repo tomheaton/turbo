@@ -1,14 +1,29 @@
-use std::path::{Path, PathBuf};
+use std::{
+    borrow::Borrow,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AbsoluteSystemPath, IntoSystem, PathError, PathValidationError, RelativeSystemPathBuf,
-    RelativeUnixPathBuf,
+    AbsoluteSystemPath, AnchoredSystemPath, IntoSystem, PathError, PathValidationError,
+    RelativeSystemPathBuf, RelativeUnixPathBuf,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
-pub struct AnchoredSystemPathBuf(PathBuf);
+pub struct AnchoredSystemPathBuf(pub(crate) PathBuf);
+
+impl Borrow<AnchoredSystemPath> for AnchoredSystemPathBuf {
+    fn borrow(&self) -> &AnchoredSystemPath {
+        AnchoredSystemPath::new_unchecked(self.0.as_path())
+    }
+}
+
+impl AsRef<AnchoredSystemPath> for AnchoredSystemPathBuf {
+    fn as_ref(&self) -> &AnchoredSystemPath {
+        self.borrow()
+    }
+}
 
 impl TryFrom<&Path> for AnchoredSystemPathBuf {
     type Error = PathError;
@@ -47,6 +62,10 @@ impl AnchoredSystemPathBuf {
         self.0.as_path()
     }
 
+    pub fn as_anchored_path(&self) -> &AnchoredSystemPath {
+        AnchoredSystemPath::new_unchecked(self.0.as_path())
+    }
+
     pub fn to_str(&self) -> Result<&str, PathError> {
         self.0
             .to_str()
@@ -70,6 +89,10 @@ impl AnchoredSystemPathBuf {
             return RelativeUnixPathBuf::new(unix_str.as_bytes());
         }
     }
+
+    pub fn push(&mut self, path: impl AsRef<Path>) {
+        self.0.push(path.as_ref());
+    }
 }
 
 impl From<AnchoredSystemPathBuf> for PathBuf {
@@ -80,7 +103,7 @@ impl From<AnchoredSystemPathBuf> for PathBuf {
 
 impl Into<RelativeSystemPathBuf> for AnchoredSystemPathBuf {
     fn into(self) -> RelativeSystemPathBuf {
-        RelativeSystemPathBuf::unchecked_new(self.0)
+        RelativeSystemPathBuf::new_unchecked(self.0)
     }
 }
 

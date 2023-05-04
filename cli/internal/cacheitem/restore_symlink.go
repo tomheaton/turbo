@@ -36,7 +36,8 @@ func restoreSymlinkMissingTarget(dirCache *cachedDirTree, anchor turbopath.Absol
 	return actuallyRestoreSymlink(dirCache, anchor, processedName, header)
 }
 
-func actuallyRestoreSymlink(dirCache *cachedDirTree, anchor turbopath.AbsoluteSystemPath, processedName turbopath.AnchoredSystemPath, header *tar.Header) (turbopath.AnchoredSystemPath, error) {
+func actuallyRestoreSymlink(dirCache *cachedDirTree,
+	anchor turbopath.AbsoluteSystemPath, processedName turbopath.AnchoredSystemPath, header *tar.Header) (turbopath.AnchoredSystemPath, error) {
 	// We need to traverse `processedName` from base to root split at
 	// `os.Separator` to make sure we don't end up following a symlink
 	// outside of the restore path.
@@ -80,6 +81,7 @@ func topologicallyRestoreSymlinks(dirCache *cachedDirTree, anchor turbopath.Abso
 		processedName, err := canonicalizeName(header.Name)
 		processedSourcename := canonicalizeLinkname(anchor, processedName, processedName.ToString())
 		processedLinkname := canonicalizeLinkname(anchor, processedName, header.Linkname)
+
 		if err != nil {
 			return nil, err
 		}

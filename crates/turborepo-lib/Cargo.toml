@@ -24,7 +24,7 @@ pretty_assertions = { workspace = true }
 rand = { workspace = true }
 tempdir = "0.3.7"
 tempfile = { workspace = true }
-test-case = "3.0.0"
+test-case = { workspace = true }
 tracing-test = { version = "0.2.4", features = ["no-env-filter"] }
 tracing.workspace = true
 vercel-api-mock = { workspace = true }

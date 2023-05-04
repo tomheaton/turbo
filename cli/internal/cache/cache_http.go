@@ -27,7 +27,7 @@ type cacheAPIClient interface {
 
 type HttpCache struct {
 	writable       bool
-	client         client2.APIClient
+	client         cacheAPIClient
 	requestLimiter limiter
 	recorder       analytics.Recorder
 	signerVerifier *ArtifactSignatureAuthentication
@@ -50,7 +50,7 @@ var mtime = time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
 // nobody is the usual uid / gid of the 'nobody' user.
 const nobody = 65534
 
-func (cache *HttpCache) GetAPIClient() client2.APIClient {
+func (cache *HttpCache) GetAPIClient() cacheAPIClient {
 	return cache.client
 }
 func (cache *HttpCache) GetRepoRoot() turbopath.AbsoluteSystemPath {

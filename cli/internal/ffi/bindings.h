@@ -16,7 +16,6 @@ struct Buffer changed_files(struct Buffer buffer);
 
 struct Buffer previous_content(struct Buffer buffer);
 
-
 struct Buffer recursive_copy(struct Buffer buffer);
 
 struct Buffer get_package_file_hashes_from_git_index(struct Buffer buffer);

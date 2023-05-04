@@ -374,7 +374,7 @@ impl APIClient {
         })
     }
 
-    pub fn new(base_url: impl AsRef<str>, timeout: u64, version: &'static str) -> Result<Self> {
+    pub fn new(base_url: impl AsRef<str>, timeout: u64, version: &str) -> Result<Self> {
         let client = if timeout != 0 {
             reqwest::Client::builder()
                 .timeout(std::time::Duration::from_secs(timeout))

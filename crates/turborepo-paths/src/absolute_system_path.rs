@@ -15,8 +15,8 @@ use std::{
 use path_slash::CowExt;
 
 use crate::{
-    AbsoluteSystemPathBuf, AnchoredSystemPathBuf, IntoSystem, PathError, PathValidationError,
-    RelativeSystemPathBuf, RelativeUnixPath,
+    AbsoluteSystemPathBuf, AnchoredSystemPath, AnchoredSystemPathBuf, IntoSystem, PathError,
+    PathValidationError, RelativeSystemPathBuf, RelativeUnixPath,
 };
 
 pub struct AbsoluteSystemPath(Path);
@@ -103,6 +103,10 @@ impl AbsoluteSystemPath {
         }
     }
 
+    pub unsafe fn new_unchecked(path: &Path) -> &Self {
+        &*(path as *const Path as *const Self)
+    }
+
     pub fn as_path(&self) -> &Path {
         &self.0
     }
@@ -150,8 +154,8 @@ impl AbsoluteSystemPath {
         Ok(())
     }
 
-    pub fn resolve(&self, path: &AnchoredSystemPathBuf) -> AbsoluteSystemPathBuf {
-        let path = self.0.join(path.as_path());
+    pub fn resolve(&self, path: impl AsRef<AnchoredSystemPath>) -> AbsoluteSystemPathBuf {
+        let path = self.0.join(path.as_ref());
         AbsoluteSystemPathBuf(path)
     }
 

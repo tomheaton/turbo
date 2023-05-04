@@ -168,7 +168,7 @@ message GetPackageFileHashesFromGitIndexResponse {
 
 message NewAPIClientRequest {
   string base_url = 1;
-  optional uint64 timeout = 2;
+  uint64 timeout = 2;
   string version = 3;
   string token = 4;
   string team_id = 5;

@@ -6,7 +6,7 @@ use std::{
 
 use serde::Serialize;
 
-use crate::{AnchoredSystemPathBuf, IntoSystem, PathValidationError};
+use crate::{AnchoredSystemPathBuf, IntoSystem, PathError, PathValidationError};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize)]
 pub struct RelativeSystemPathBuf(PathBuf);
@@ -33,11 +33,12 @@ impl RelativeSystemPathBuf {
     /// assert_eq!(relative_path.as_path(), Path::new("Users\\user"));
     /// assert_eq!(relative_path.as_path(), Path::new("Users/user"));
     /// ```
-    pub fn new(unchecked_path: impl Into<PathBuf>) -> Result<Self, PathValidationError> {
+    pub fn new(unchecked_path: impl Into<PathBuf>) -> Result<Self, PathError> {
         let unchecked_path = unchecked_path.into();
         if unchecked_path.is_absolute() {
-            let bad_path = unchecked_path.display().to_string();
-            return Err(PathValidationError::NotRelative(bad_path));
+            return Err(PathError::PathValidationError(
+                PathValidationError::NotRelative(unchecked_path.to_string_lossy().to_string()),
+            ));
         }
         let system_path = unchecked_path.into_system()?;
         Ok(RelativeSystemPathBuf(system_path))
@@ -48,7 +49,7 @@ impl RelativeSystemPathBuf {
     }
 
     /// Create a new RelativeSystemPathBuf from `path`.
-    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, PathValidationError> {
+    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, PathError> {
         RelativeSystemPathBuf::new(path.as_ref().to_path_buf())
     }
 

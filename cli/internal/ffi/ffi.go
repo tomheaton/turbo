@@ -396,5 +396,5 @@ func HTTPCacheRetrieve(hash string, baseURL string, timeout uint64, version stri
 		files[i] = turbopath.AnchoredSystemPath(file)
 	}
 
-	return true, files, duration, nil
+	return true, files, int(duration), nil
 }
