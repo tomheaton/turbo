@@ -145,18 +145,14 @@ impl CommandBase {
 
         let api_url = repo_config.api_url();
         let timeout = client_config.remote_cache_timeout();
-        Ok(APIClient::new(api_url, timeout, self.version)?)
+        APIClient::new(api_url, timeout, self.version)
     }
 
     pub fn daemon_file_root(&self) -> turbopath::AbsoluteSystemPathBuf {
         turbopath::AbsoluteSystemPathBuf::new(std::env::temp_dir())
             .expect("temp dir is valid")
-            .join_relative(
-                turbopath::RelativeSystemPathBuf::new("turbod").expect("turbod is valid"),
-            )
-            .join_relative(
-                turbopath::RelativeSystemPathBuf::new(self.repo_hash()).expect("hash is valid"),
-            )
+            .join_component("turbod")
+            .join_component(self.repo_hash().as_str())
     }
 
     fn repo_hash(&self) -> String {
