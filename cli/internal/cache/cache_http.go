@@ -4,10 +4,7 @@
 package cache
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
-	client2 "github.com/vercel/turbo/cli/internal/client"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -158,7 +155,7 @@ func (cache *HttpCache) exists(hash string) (bool, error) {
 	return true, err
 }
 
-func (cache *httpCache) Clean(_ turbopath.AbsoluteSystemPath) {
+func (cache *HttpCache) Clean(_ turbopath.AbsoluteSystemPath) {
 	// Not possible; this implementation can only clean for a hash.
 }
 
@@ -168,7 +165,7 @@ func (cache *HttpCache) CleanAll() {
 
 func (cache *HttpCache) Shutdown() {}
 
-func newHTTPCache(opts Opts, client client, recorder analytics.Recorder, repoRoot turbopath.AbsoluteSystemPath) *httpCache {
+func newHTTPCache(opts Opts, client cacheAPIClient, recorder analytics.Recorder, repoRoot turbopath.AbsoluteSystemPath) *HttpCache {
 	return &HttpCache{
 		writable:       true,
 		client:         client,

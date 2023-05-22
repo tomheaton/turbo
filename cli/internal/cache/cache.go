@@ -7,7 +7,6 @@ package cache
 
 import (
 	"errors"
-	"github.com/vercel/turbo/cli/internal/client"
 	"sync"
 
 	"github.com/vercel/turbo/cli/internal/analytics"

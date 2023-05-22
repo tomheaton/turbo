@@ -19,6 +19,7 @@ use crate::{
     PathValidationError, RelativeSystemPathBuf, RelativeUnixPath,
 };
 
+#[derive(Debug)]
 pub struct AbsoluteSystemPath(Path);
 
 impl ToOwned for AbsoluteSystemPath {
