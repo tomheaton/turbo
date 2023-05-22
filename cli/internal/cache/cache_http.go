@@ -44,12 +44,6 @@ func (l limiter) release() {
 	<-l
 }
 
-// mtime is the time we attach for the modification time of all files.
-var mtime = time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC)
-
-// nobody is the usual uid / gid of the 'nobody' user.
-const nobody = 65534
-
 func (cache *HttpCache) GetAPIClient() cacheAPIClient {
 	return cache.client
 }
@@ -162,65 +156,6 @@ func (cache *HttpCache) exists(hash string) (bool, error) {
 		return false, fmt.Errorf("%s", strconv.Itoa(resp.StatusCode))
 	}
 	return true, err
-}
-
-func (cache *HttpCache) retrieve(hash string) (bool, []turbopath.AnchoredSystemPath, int, error) {
-	resp, err := cache.client.FetchArtifact(hash)
-	if err != nil {
-		return false, nil, 0, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return false, nil, 0, nil // doesn't exist - not an error
-	} else if resp.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(resp.Body)
-		return false, nil, 0, fmt.Errorf("%s", string(b))
-	}
-	// If present, extract the duration from the response.
-	duration := 0
-	if resp.Header.Get("x-artifact-duration") != "" {
-		intVar, err := strconv.Atoi(resp.Header.Get("x-artifact-duration"))
-		if err != nil {
-			return false, nil, 0, fmt.Errorf("invalid x-artifact-duration header: %w", err)
-		}
-		duration = intVar
-	}
-	var tarReader io.Reader
-
-	defer func() { _ = resp.Body.Close() }()
-	if cache.signerVerifier.isEnabled() {
-		expectedTag := resp.Header.Get("x-artifact-tag")
-		if expectedTag == "" {
-			// If the verifier is enabled all incoming artifact downloads must have a signature
-			return false, nil, 0, errors.New("artifact verification failed: Downloaded artifact is missing required x-artifact-tag header")
-		}
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return false, nil, 0, fmt.Errorf("artifact verification failed: %w", err)
-		}
-		isValid, err := cache.signerVerifier.validate(hash, b, expectedTag)
-		if err != nil {
-			return false, nil, 0, fmt.Errorf("artifact verification failed: %w", err)
-		}
-		if !isValid {
-			err = fmt.Errorf("artifact verification failed: artifact tag does not match expected tag %s", expectedTag)
-			return false, nil, 0, err
-		}
-		// The artifact has been verified and the body can be read and untarred
-		tarReader = bytes.NewReader(b)
-	} else {
-		tarReader = resp.Body
-	}
-	files, err := restoreTar(cache.repoRoot, tarReader)
-	if err != nil {
-		return false, nil, 0, err
-	}
-	return true, files, duration, nil
-}
-
-func restoreTar(root turbopath.AbsoluteSystemPath, reader io.Reader) ([]turbopath.AnchoredSystemPath, error) {
-	cache := cacheitem.FromReader(reader, true)
-	return cache.Restore(root)
 }
 
 func (cache *httpCache) Clean(_ turbopath.AbsoluteSystemPath) {

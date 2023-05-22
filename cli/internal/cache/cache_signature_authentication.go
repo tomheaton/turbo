@@ -39,10 +39,7 @@ func (asa *ArtifactSignatureAuthentication) generateTag(hash string, artifactBod
 		return "", err
 	}
 	tag.Write(artifactBody)
-	hmacOutput := tag.Sum(nil)
-	output := base64.StdEncoding.EncodeToString(hmacOutput)
-
-	return output, nil
+	return base64.StdEncoding.EncodeToString(tag.Sum(nil)), nil
 }
 
 func (asa *ArtifactSignatureAuthentication) getTagGenerator(hash string) (hash.Hash, error) {

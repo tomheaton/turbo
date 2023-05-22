@@ -91,7 +91,7 @@ var _remoteOnlyHelp = `Ignore the local filesystem cache for all tasks. Only
 allow reading and caching artifacts using the remote cache.`
 
 // New creates a new cache
-func New(opts Opts, repoRoot turbopath.AbsoluteSystemPath, client *client.APIClient, recorder analytics.Recorder, onCacheRemoved OnCacheRemoved) (Cache, error) {
+func New(opts Opts, repoRoot turbopath.AbsoluteSystemPath, client cacheAPIClient, recorder analytics.Recorder, onCacheRemoved OnCacheRemoved) (Cache, error) {
 	c, err := newSyncCache(opts, repoRoot, client, recorder, onCacheRemoved)
 	if err != nil && !errors.Is(err, ErrNoCachesEnabled) {
 		return nil, err
@@ -103,7 +103,7 @@ func New(opts Opts, repoRoot turbopath.AbsoluteSystemPath, client *client.APICli
 }
 
 // newSyncCache can return an error with a usable noopCache.
-func newSyncCache(opts Opts, repoRoot turbopath.AbsoluteSystemPath, client *client.APIClient, recorder analytics.Recorder, onCacheRemoved OnCacheRemoved) (Cache, error) {
+func newSyncCache(opts Opts, repoRoot turbopath.AbsoluteSystemPath, client cacheAPIClient, recorder analytics.Recorder, onCacheRemoved OnCacheRemoved) (Cache, error) {
 	// Check to see if the user has turned off particular cache implementations.
 	useFsCache := !opts.SkipFilesystem
 	useHTTPCache := !opts.SkipRemote
