@@ -9,7 +9,7 @@ use std::{mem::ManuallyDrop, path::PathBuf};
 
 pub use cache::retrieve;
 pub use lockfile::{patches, subgraph, transitive_closure};
-use turbopath::{AbsoluteSystemPathBuf, AnchoredSystemPathBuf, RelativeSystemPathBuf};
+use turbopath::AbsoluteSystemPathBuf;
 
 mod proto {
     include!(concat!(env!("OUT_DIR"), "/_.rs"));

@@ -42,7 +42,7 @@ impl AnchoredSystemPathBuf {
         let path = path.into();
         if path.is_absolute() {
             let bad_path = path.display().to_string();
-            return Err(PathValidationError::NotRelative(bad_path).into());
+            return Err(PathError::NotRelative(bad_path));
         }
 
         Ok(AnchoredSystemPathBuf(path.into_system()?))
