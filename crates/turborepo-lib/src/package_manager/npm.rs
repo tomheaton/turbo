@@ -1,5 +1,5 @@
 use anyhow::Result;
-use turbopath::AbsoluteSystemPathBuf;
+use turbopath::{AbsoluteSystemPathBuf, RelativeSystemPathBuf};
 
 use crate::package_manager::PackageManager;
 
@@ -28,7 +28,9 @@ impl<'a> Iterator for NpmDetector<'a> {
         }
 
         self.found = true;
-        let package_json = self.repo_root.join_component(LOCKFILE);
+        let package_json = self
+            .repo_root
+            .join_relative(RelativeSystemPathBuf::new(LOCKFILE).unwrap());
 
         if package_json.exists() {
             Some(Ok(PackageManager::Npm))

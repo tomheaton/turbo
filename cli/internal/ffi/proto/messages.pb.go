@@ -1662,20 +1662,17 @@ func (x *RecursiveCopyResponse) GetError() string {
 	return ""
 }
 
-type VerifySignatureRequest struct {
+type GetPackageFileHashesFromGitIndexRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Hash              string `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
-	ArtifactBody      []byte `protobuf:"bytes,2,opt,name=artifact_body,json=artifactBody,proto3" json:"artifact_body,omitempty"`
-	TeamId            []byte `protobuf:"bytes,3,opt,name=team_id,json=teamId,proto3" json:"team_id,omitempty"`
-	ExpectedTag       string `protobuf:"bytes,4,opt,name=expected_tag,json=expectedTag,proto3" json:"expected_tag,omitempty"`
-	SecretKeyOverride []byte `protobuf:"bytes,5,opt,name=secret_key_override,json=secretKeyOverride,proto3,oneof" json:"secret_key_override,omitempty"`
+	TurboRoot   string `protobuf:"bytes,1,opt,name=turbo_root,json=turboRoot,proto3" json:"turbo_root,omitempty"`
+	PackagePath string `protobuf:"bytes,2,opt,name=package_path,json=packagePath,proto3" json:"package_path,omitempty"`
 }
 
-func (x *VerifySignatureRequest) Reset() {
-	*x = VerifySignatureRequest{}
+func (x *GetPackageFileHashesFromGitIndexRequest) Reset() {
+	*x = GetPackageFileHashesFromGitIndexRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_turborepo_ffi_messages_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1683,13 +1680,13 @@ func (x *VerifySignatureRequest) Reset() {
 	}
 }
 
-func (x *VerifySignatureRequest) String() string {
+func (x *GetPackageFileHashesFromGitIndexRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*VerifySignatureRequest) ProtoMessage() {}
+func (*GetPackageFileHashesFromGitIndexRequest) ProtoMessage() {}
 
-func (x *VerifySignatureRequest) ProtoReflect() protoreflect.Message {
+func (x *GetPackageFileHashesFromGitIndexRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_turborepo_ffi_messages_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1701,59 +1698,35 @@ func (x *VerifySignatureRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use VerifySignatureRequest.ProtoReflect.Descriptor instead.
-func (*VerifySignatureRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetPackageFileHashesFromGitIndexRequest.ProtoReflect.Descriptor instead.
+func (*GetPackageFileHashesFromGitIndexRequest) Descriptor() ([]byte, []int) {
 	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{26}
 }
 
-func (x *VerifySignatureRequest) GetHash() string {
+func (x *GetPackageFileHashesFromGitIndexRequest) GetTurboRoot() string {
 	if x != nil {
-		return x.Hash
+		return x.TurboRoot
 	}
 	return ""
 }
 
-func (x *VerifySignatureRequest) GetArtifactBody() []byte {
+func (x *GetPackageFileHashesFromGitIndexRequest) GetPackagePath() string {
 	if x != nil {
-		return x.ArtifactBody
-	}
-	return nil
-}
-
-func (x *VerifySignatureRequest) GetTeamId() []byte {
-	if x != nil {
-		return x.TeamId
-	}
-	return nil
-}
-
-func (x *VerifySignatureRequest) GetExpectedTag() string {
-	if x != nil {
-		return x.ExpectedTag
+		return x.PackagePath
 	}
 	return ""
 }
 
-func (x *VerifySignatureRequest) GetSecretKeyOverride() []byte {
-	if x != nil {
-		return x.SecretKeyOverride
-	}
-	return nil
-}
-
-type VerifySignatureResponse struct {
+type FileHashes struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Types that are assignable to Response:
-	//	*VerifySignatureResponse_Verified
-	//	*VerifySignatureResponse_Error
-	Response isVerifySignatureResponse_Response `protobuf_oneof:"response"`
+	Hashes map[string]string `protobuf:"bytes,1,rep,name=hashes,proto3" json:"hashes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-func (x *VerifySignatureResponse) Reset() {
-	*x = VerifySignatureResponse{}
+func (x *FileHashes) Reset() {
+	*x = FileHashes{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_turborepo_ffi_messages_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1761,13 +1734,13 @@ func (x *VerifySignatureResponse) Reset() {
 	}
 }
 
-func (x *VerifySignatureResponse) String() string {
+func (x *FileHashes) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*VerifySignatureResponse) ProtoMessage() {}
+func (*FileHashes) ProtoMessage() {}
 
-func (x *VerifySignatureResponse) ProtoReflect() protoreflect.Message {
+func (x *FileHashes) ProtoReflect() protoreflect.Message {
 	mi := &file_turborepo_ffi_messages_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1779,47 +1752,494 @@ func (x *VerifySignatureResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use VerifySignatureResponse.ProtoReflect.Descriptor instead.
-func (*VerifySignatureResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use FileHashes.ProtoReflect.Descriptor instead.
+func (*FileHashes) Descriptor() ([]byte, []int) {
 	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{27}
 }
 
-func (m *VerifySignatureResponse) GetResponse() isVerifySignatureResponse_Response {
+func (x *FileHashes) GetHashes() map[string]string {
+	if x != nil {
+		return x.Hashes
+	}
+	return nil
+}
+
+type GetPackageFileHashesFromGitIndexResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Response:
+	//	*GetPackageFileHashesFromGitIndexResponse_Hashes
+	//	*GetPackageFileHashesFromGitIndexResponse_Error
+	Response isGetPackageFileHashesFromGitIndexResponse_Response `protobuf_oneof:"response"`
+}
+
+func (x *GetPackageFileHashesFromGitIndexResponse) Reset() {
+	*x = GetPackageFileHashesFromGitIndexResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_turborepo_ffi_messages_proto_msgTypes[28]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GetPackageFileHashesFromGitIndexResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPackageFileHashesFromGitIndexResponse) ProtoMessage() {}
+
+func (x *GetPackageFileHashesFromGitIndexResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_turborepo_ffi_messages_proto_msgTypes[28]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPackageFileHashesFromGitIndexResponse.ProtoReflect.Descriptor instead.
+func (*GetPackageFileHashesFromGitIndexResponse) Descriptor() ([]byte, []int) {
+	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{28}
+}
+
+func (m *GetPackageFileHashesFromGitIndexResponse) GetResponse() isGetPackageFileHashesFromGitIndexResponse_Response {
 	if m != nil {
 		return m.Response
 	}
 	return nil
 }
 
-func (x *VerifySignatureResponse) GetVerified() bool {
-	if x, ok := x.GetResponse().(*VerifySignatureResponse_Verified); ok {
-		return x.Verified
+func (x *GetPackageFileHashesFromGitIndexResponse) GetHashes() *FileHashes {
+	if x, ok := x.GetResponse().(*GetPackageFileHashesFromGitIndexResponse_Hashes); ok {
+		return x.Hashes
 	}
-	return false
+	return nil
 }
 
-func (x *VerifySignatureResponse) GetError() string {
-	if x, ok := x.GetResponse().(*VerifySignatureResponse_Error); ok {
+func (x *GetPackageFileHashesFromGitIndexResponse) GetError() string {
+	if x, ok := x.GetResponse().(*GetPackageFileHashesFromGitIndexResponse_Error); ok {
 		return x.Error
 	}
 	return ""
 }
 
-type isVerifySignatureResponse_Response interface {
-	isVerifySignatureResponse_Response()
+type isGetPackageFileHashesFromGitIndexResponse_Response interface {
+	isGetPackageFileHashesFromGitIndexResponse_Response()
 }
 
-type VerifySignatureResponse_Verified struct {
-	Verified bool `protobuf:"varint,1,opt,name=verified,proto3,oneof"`
+type GetPackageFileHashesFromGitIndexResponse_Hashes struct {
+	Hashes *FileHashes `protobuf:"bytes,1,opt,name=hashes,proto3,oneof"`
 }
 
-type VerifySignatureResponse_Error struct {
+type GetPackageFileHashesFromGitIndexResponse_Error struct {
 	Error string `protobuf:"bytes,2,opt,name=error,proto3,oneof"`
 }
 
-func (*VerifySignatureResponse_Verified) isVerifySignatureResponse_Response() {}
+func (*GetPackageFileHashesFromGitIndexResponse_Hashes) isGetPackageFileHashesFromGitIndexResponse_Response() {
+}
 
-func (*VerifySignatureResponse_Error) isVerifySignatureResponse_Response() {}
+func (*GetPackageFileHashesFromGitIndexResponse_Error) isGetPackageFileHashesFromGitIndexResponse_Response() {
+}
+
+type NewAPIClientRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	BaseUrl      string  `protobuf:"bytes,1,opt,name=base_url,json=baseUrl,proto3" json:"base_url,omitempty"`
+	Timeout      *uint64 `protobuf:"varint,2,opt,name=timeout,proto3,oneof" json:"timeout,omitempty"`
+	Version      string  `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	Token        string  `protobuf:"bytes,4,opt,name=token,proto3" json:"token,omitempty"`
+	TeamId       string  `protobuf:"bytes,5,opt,name=team_id,json=teamId,proto3" json:"team_id,omitempty"`
+	TeamSlug     *string `protobuf:"bytes,6,opt,name=team_slug,json=teamSlug,proto3,oneof" json:"team_slug,omitempty"`
+	UsePreflight bool    `protobuf:"varint,7,opt,name=use_preflight,json=usePreflight,proto3" json:"use_preflight,omitempty"`
+}
+
+func (x *NewAPIClientRequest) Reset() {
+	*x = NewAPIClientRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_turborepo_ffi_messages_proto_msgTypes[29]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *NewAPIClientRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NewAPIClientRequest) ProtoMessage() {}
+
+func (x *NewAPIClientRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_turborepo_ffi_messages_proto_msgTypes[29]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NewAPIClientRequest.ProtoReflect.Descriptor instead.
+func (*NewAPIClientRequest) Descriptor() ([]byte, []int) {
+	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *NewAPIClientRequest) GetBaseUrl() string {
+	if x != nil {
+		return x.BaseUrl
+	}
+	return ""
+}
+
+func (x *NewAPIClientRequest) GetTimeout() uint64 {
+	if x != nil && x.Timeout != nil {
+		return *x.Timeout
+	}
+	return 0
+}
+
+func (x *NewAPIClientRequest) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *NewAPIClientRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *NewAPIClientRequest) GetTeamId() string {
+	if x != nil {
+		return x.TeamId
+	}
+	return ""
+}
+
+func (x *NewAPIClientRequest) GetTeamSlug() string {
+	if x != nil && x.TeamSlug != nil {
+		return *x.TeamSlug
+	}
+	return ""
+}
+
+func (x *NewAPIClientRequest) GetUsePreflight() bool {
+	if x != nil {
+		return x.UsePreflight
+	}
+	return false
+}
+
+type NewArtifactSignatureAuthenticatorRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	TeamId string `protobuf:"bytes,1,opt,name=team_id,json=teamId,proto3" json:"team_id,omitempty"`
+}
+
+func (x *NewArtifactSignatureAuthenticatorRequest) Reset() {
+	*x = NewArtifactSignatureAuthenticatorRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_turborepo_ffi_messages_proto_msgTypes[30]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *NewArtifactSignatureAuthenticatorRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NewArtifactSignatureAuthenticatorRequest) ProtoMessage() {}
+
+func (x *NewArtifactSignatureAuthenticatorRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_turborepo_ffi_messages_proto_msgTypes[30]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NewArtifactSignatureAuthenticatorRequest.ProtoReflect.Descriptor instead.
+func (*NewArtifactSignatureAuthenticatorRequest) Descriptor() ([]byte, []int) {
+	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *NewArtifactSignatureAuthenticatorRequest) GetTeamId() string {
+	if x != nil {
+		return x.TeamId
+	}
+	return ""
+}
+
+type NewHttpCacheRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ApiClient     *NewAPIClientRequest                      `protobuf:"bytes,1,opt,name=api_client,json=apiClient,proto3" json:"api_client,omitempty"`
+	Authenticator *NewArtifactSignatureAuthenticatorRequest `protobuf:"bytes,2,opt,name=authenticator,proto3" json:"authenticator,omitempty"`
+	RepoRoot      string                                    `protobuf:"bytes,3,opt,name=repo_root,json=repoRoot,proto3" json:"repo_root,omitempty"`
+}
+
+func (x *NewHttpCacheRequest) Reset() {
+	*x = NewHttpCacheRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_turborepo_ffi_messages_proto_msgTypes[31]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *NewHttpCacheRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NewHttpCacheRequest) ProtoMessage() {}
+
+func (x *NewHttpCacheRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_turborepo_ffi_messages_proto_msgTypes[31]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NewHttpCacheRequest.ProtoReflect.Descriptor instead.
+func (*NewHttpCacheRequest) Descriptor() ([]byte, []int) {
+	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *NewHttpCacheRequest) GetApiClient() *NewAPIClientRequest {
+	if x != nil {
+		return x.ApiClient
+	}
+	return nil
+}
+
+func (x *NewHttpCacheRequest) GetAuthenticator() *NewArtifactSignatureAuthenticatorRequest {
+	if x != nil {
+		return x.Authenticator
+	}
+	return nil
+}
+
+func (x *NewHttpCacheRequest) GetRepoRoot() string {
+	if x != nil {
+		return x.RepoRoot
+	}
+	return ""
+}
+
+type RetrieveRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	HttpCache *NewHttpCacheRequest `protobuf:"bytes,1,opt,name=http_cache,json=httpCache,proto3" json:"http_cache,omitempty"`
+	Hash      string               `protobuf:"bytes,2,opt,name=hash,proto3" json:"hash,omitempty"`
+}
+
+func (x *RetrieveRequest) Reset() {
+	*x = RetrieveRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_turborepo_ffi_messages_proto_msgTypes[32]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RetrieveRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetrieveRequest) ProtoMessage() {}
+
+func (x *RetrieveRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_turborepo_ffi_messages_proto_msgTypes[32]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetrieveRequest.ProtoReflect.Descriptor instead.
+func (*RetrieveRequest) Descriptor() ([]byte, []int) {
+	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *RetrieveRequest) GetHttpCache() *NewHttpCacheRequest {
+	if x != nil {
+		return x.HttpCache
+	}
+	return nil
+}
+
+func (x *RetrieveRequest) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
+type RestoredFilesList struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Files    []string `protobuf:"bytes,1,rep,name=files,proto3" json:"files,omitempty"`
+	Duration uint64   `protobuf:"varint,2,opt,name=duration,proto3" json:"duration,omitempty"`
+}
+
+func (x *RestoredFilesList) Reset() {
+	*x = RestoredFilesList{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_turborepo_ffi_messages_proto_msgTypes[33]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RestoredFilesList) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoredFilesList) ProtoMessage() {}
+
+func (x *RestoredFilesList) ProtoReflect() protoreflect.Message {
+	mi := &file_turborepo_ffi_messages_proto_msgTypes[33]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoredFilesList.ProtoReflect.Descriptor instead.
+func (*RestoredFilesList) Descriptor() ([]byte, []int) {
+	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *RestoredFilesList) GetFiles() []string {
+	if x != nil {
+		return x.Files
+	}
+	return nil
+}
+
+func (x *RestoredFilesList) GetDuration() uint64 {
+	if x != nil {
+		return x.Duration
+	}
+	return 0
+}
+
+type RetrieveResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Response:
+	//	*RetrieveResponse_Files
+	//	*RetrieveResponse_Error
+	Response isRetrieveResponse_Response `protobuf_oneof:"response"`
+}
+
+func (x *RetrieveResponse) Reset() {
+	*x = RetrieveResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_turborepo_ffi_messages_proto_msgTypes[34]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RetrieveResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetrieveResponse) ProtoMessage() {}
+
+func (x *RetrieveResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_turborepo_ffi_messages_proto_msgTypes[34]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetrieveResponse.ProtoReflect.Descriptor instead.
+func (*RetrieveResponse) Descriptor() ([]byte, []int) {
+	return file_turborepo_ffi_messages_proto_rawDescGZIP(), []int{34}
+}
+
+func (m *RetrieveResponse) GetResponse() isRetrieveResponse_Response {
+	if m != nil {
+		return m.Response
+	}
+	return nil
+}
+
+func (x *RetrieveResponse) GetFiles() *RestoredFilesList {
+	if x, ok := x.GetResponse().(*RetrieveResponse_Files); ok {
+		return x.Files
+	}
+	return nil
+}
+
+func (x *RetrieveResponse) GetError() string {
+	if x, ok := x.GetResponse().(*RetrieveResponse_Error); ok {
+		return x.Error
+	}
+	return ""
+}
+
+type isRetrieveResponse_Response interface {
+	isRetrieveResponse_Response()
+}
+
+type RetrieveResponse_Files struct {
+	Files *RestoredFilesList `protobuf:"bytes,1,opt,name=files,proto3,oneof"`
+}
+
+type RetrieveResponse_Error struct {
+	Error string `protobuf:"bytes,2,opt,name=error,proto3,oneof"`
+}
+
+func (*RetrieveResponse_Files) isRetrieveResponse_Response() {}
+
+func (*RetrieveResponse_Error) isRetrieveResponse_Response() {}
 
 var File_turborepo_ffi_messages_proto protoreflect.FileDescriptor
 
@@ -2002,30 +2422,80 @@ var file_turborepo_ffi_messages_proto_rawDesc = []byte{
 	0x76, 0x65, 0x43, 0x6f, 0x70, 0x79, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x19,
 	0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52,
 	0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x88, 0x01, 0x01, 0x42, 0x08, 0x0a, 0x06, 0x5f, 0x65, 0x72,
-	0x72, 0x6f, 0x72, 0x22, 0xda, 0x01, 0x0a, 0x16, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x53, 0x69,
-	0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x12,
-	0x0a, 0x04, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x68, 0x61,
-	0x73, 0x68, 0x12, 0x23, 0x0a, 0x0d, 0x61, 0x72, 0x74, 0x69, 0x66, 0x61, 0x63, 0x74, 0x5f, 0x62,
-	0x6f, 0x64, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0c, 0x61, 0x72, 0x74, 0x69, 0x66,
-	0x61, 0x63, 0x74, 0x42, 0x6f, 0x64, 0x79, 0x12, 0x17, 0x0a, 0x07, 0x74, 0x65, 0x61, 0x6d, 0x5f,
-	0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x06, 0x74, 0x65, 0x61, 0x6d, 0x49, 0x64,
-	0x12, 0x21, 0x0a, 0x0c, 0x65, 0x78, 0x70, 0x65, 0x63, 0x74, 0x65, 0x64, 0x5f, 0x74, 0x61, 0x67,
-	0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x65, 0x78, 0x70, 0x65, 0x63, 0x74, 0x65, 0x64,
-	0x54, 0x61, 0x67, 0x12, 0x33, 0x0a, 0x13, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x5f, 0x6b, 0x65,
-	0x79, 0x5f, 0x6f, 0x76, 0x65, 0x72, 0x72, 0x69, 0x64, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0c,
-	0x48, 0x00, 0x52, 0x11, 0x73, 0x65, 0x63, 0x72, 0x65, 0x74, 0x4b, 0x65, 0x79, 0x4f, 0x76, 0x65,
-	0x72, 0x72, 0x69, 0x64, 0x65, 0x88, 0x01, 0x01, 0x42, 0x16, 0x0a, 0x14, 0x5f, 0x73, 0x65, 0x63,
-	0x72, 0x65, 0x74, 0x5f, 0x6b, 0x65, 0x79, 0x5f, 0x6f, 0x76, 0x65, 0x72, 0x72, 0x69, 0x64, 0x65,
-	0x22, 0x5b, 0x0a, 0x17, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74,
-	0x75, 0x72, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1c, 0x0a, 0x08, 0x76,
-	0x65, 0x72, 0x69, 0x66, 0x69, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52,
-	0x08, 0x76, 0x65, 0x72, 0x69, 0x66, 0x69, 0x65, 0x64, 0x12, 0x16, 0x0a, 0x05, 0x65, 0x72, 0x72,
-	0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f,
-	0x72, 0x42, 0x0a, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x2a, 0x24, 0x0a,
-	0x0e, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x4d, 0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x12,
-	0x07, 0x0a, 0x03, 0x4e, 0x50, 0x4d, 0x10, 0x00, 0x12, 0x09, 0x0a, 0x05, 0x42, 0x45, 0x52, 0x52,
-	0x59, 0x10, 0x01, 0x42, 0x0b, 0x5a, 0x09, 0x66, 0x66, 0x69, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x72, 0x6f, 0x72, 0x22, 0x6b, 0x0a, 0x27, 0x47, 0x65, 0x74, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67,
+	0x65, 0x46, 0x69, 0x6c, 0x65, 0x48, 0x61, 0x73, 0x68, 0x65, 0x73, 0x46, 0x72, 0x6f, 0x6d, 0x47,
+	0x69, 0x74, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1d,
+	0x0a, 0x0a, 0x74, 0x75, 0x72, 0x62, 0x6f, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x09, 0x74, 0x75, 0x72, 0x62, 0x6f, 0x52, 0x6f, 0x6f, 0x74, 0x12, 0x21, 0x0a,
+	0x0c, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x5f, 0x70, 0x61, 0x74, 0x68, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0b, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x50, 0x61, 0x74, 0x68,
+	0x22, 0x78, 0x0a, 0x0a, 0x46, 0x69, 0x6c, 0x65, 0x48, 0x61, 0x73, 0x68, 0x65, 0x73, 0x12, 0x2f,
+	0x0a, 0x06, 0x68, 0x61, 0x73, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x17,
+	0x2e, 0x46, 0x69, 0x6c, 0x65, 0x48, 0x61, 0x73, 0x68, 0x65, 0x73, 0x2e, 0x48, 0x61, 0x73, 0x68,
+	0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x06, 0x68, 0x61, 0x73, 0x68, 0x65, 0x73, 0x1a,
+	0x39, 0x0a, 0x0b, 0x48, 0x61, 0x73, 0x68, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10,
+	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
+	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x75, 0x0a, 0x28, 0x47, 0x65,
+	0x74, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x46, 0x69, 0x6c, 0x65, 0x48, 0x61, 0x73, 0x68,
+	0x65, 0x73, 0x46, 0x72, 0x6f, 0x6d, 0x47, 0x69, 0x74, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x25, 0x0a, 0x06, 0x68, 0x61, 0x73, 0x68, 0x65, 0x73,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0b, 0x2e, 0x46, 0x69, 0x6c, 0x65, 0x48, 0x61, 0x73,
+	0x68, 0x65, 0x73, 0x48, 0x00, 0x52, 0x06, 0x68, 0x61, 0x73, 0x68, 0x65, 0x73, 0x12, 0x16, 0x0a,
+	0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x05,
+	0x65, 0x72, 0x72, 0x6f, 0x72, 0x42, 0x0a, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0xf9, 0x01, 0x0a, 0x13, 0x4e, 0x65, 0x77, 0x41, 0x50, 0x49, 0x43, 0x6c, 0x69, 0x65,
+	0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x08, 0x62, 0x61, 0x73,
+	0x65, 0x5f, 0x75, 0x72, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x62, 0x61, 0x73,
+	0x65, 0x55, 0x72, 0x6c, 0x12, 0x1d, 0x0a, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x04, 0x48, 0x00, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74,
+	0x88, 0x01, 0x01, 0x12, 0x18, 0x0a, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x14, 0x0a,
+	0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74, 0x6f,
+	0x6b, 0x65, 0x6e, 0x12, 0x17, 0x0a, 0x07, 0x74, 0x65, 0x61, 0x6d, 0x5f, 0x69, 0x64, 0x18, 0x05,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x74, 0x65, 0x61, 0x6d, 0x49, 0x64, 0x12, 0x20, 0x0a, 0x09,
+	0x74, 0x65, 0x61, 0x6d, 0x5f, 0x73, 0x6c, 0x75, 0x67, 0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x48,
+	0x01, 0x52, 0x08, 0x74, 0x65, 0x61, 0x6d, 0x53, 0x6c, 0x75, 0x67, 0x88, 0x01, 0x01, 0x12, 0x23,
+	0x0a, 0x0d, 0x75, 0x73, 0x65, 0x5f, 0x70, 0x72, 0x65, 0x66, 0x6c, 0x69, 0x67, 0x68, 0x74, 0x18,
+	0x07, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0c, 0x75, 0x73, 0x65, 0x50, 0x72, 0x65, 0x66, 0x6c, 0x69,
+	0x67, 0x68, 0x74, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x42,
+	0x0c, 0x0a, 0x0a, 0x5f, 0x74, 0x65, 0x61, 0x6d, 0x5f, 0x73, 0x6c, 0x75, 0x67, 0x22, 0x43, 0x0a,
+	0x28, 0x4e, 0x65, 0x77, 0x41, 0x72, 0x74, 0x69, 0x66, 0x61, 0x63, 0x74, 0x53, 0x69, 0x67, 0x6e,
+	0x61, 0x74, 0x75, 0x72, 0x65, 0x41, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74,
+	0x6f, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x74, 0x65, 0x61,
+	0x6d, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x74, 0x65, 0x61, 0x6d,
+	0x49, 0x64, 0x22, 0xb8, 0x01, 0x0a, 0x13, 0x4e, 0x65, 0x77, 0x48, 0x74, 0x74, 0x70, 0x43, 0x61,
+	0x63, 0x68, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x33, 0x0a, 0x0a, 0x61, 0x70,
+	0x69, 0x5f, 0x63, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14,
+	0x2e, 0x4e, 0x65, 0x77, 0x41, 0x50, 0x49, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x52, 0x09, 0x61, 0x70, 0x69, 0x43, 0x6c, 0x69, 0x65, 0x6e, 0x74, 0x12,
+	0x4f, 0x0a, 0x0d, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x6f, 0x72,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x4e, 0x65, 0x77, 0x41, 0x72, 0x74, 0x69,
+	0x66, 0x61, 0x63, 0x74, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65, 0x41, 0x75, 0x74,
+	0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x52, 0x0d, 0x61, 0x75, 0x74, 0x68, 0x65, 0x6e, 0x74, 0x69, 0x63, 0x61, 0x74, 0x6f, 0x72,
+	0x12, 0x1b, 0x0a, 0x09, 0x72, 0x65, 0x70, 0x6f, 0x5f, 0x72, 0x6f, 0x6f, 0x74, 0x18, 0x03, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x65, 0x70, 0x6f, 0x52, 0x6f, 0x6f, 0x74, 0x22, 0x5a, 0x0a,
+	0x0f, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x33, 0x0a, 0x0a, 0x68, 0x74, 0x74, 0x70, 0x5f, 0x63, 0x61, 0x63, 0x68, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x4e, 0x65, 0x77, 0x48, 0x74, 0x74, 0x70, 0x43, 0x61,
+	0x63, 0x68, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x52, 0x09, 0x68, 0x74, 0x74, 0x70,
+	0x43, 0x61, 0x63, 0x68, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x68, 0x61, 0x73, 0x68, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x04, 0x68, 0x61, 0x73, 0x68, 0x22, 0x45, 0x0a, 0x11, 0x52, 0x65, 0x73,
+	0x74, 0x6f, 0x72, 0x65, 0x64, 0x46, 0x69, 0x6c, 0x65, 0x73, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x14,
+	0x0a, 0x05, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x05, 0x66,
+	0x69, 0x6c, 0x65, 0x73, 0x12, 0x1a, 0x0a, 0x08, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x08, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x22, 0x62, 0x0a, 0x10, 0x52, 0x65, 0x74, 0x72, 0x69, 0x65, 0x76, 0x65, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2a, 0x0a, 0x05, 0x66, 0x69, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x52, 0x65, 0x73, 0x74, 0x6f, 0x72, 0x65, 0x64, 0x46, 0x69,
+	0x6c, 0x65, 0x73, 0x4c, 0x69, 0x73, 0x74, 0x48, 0x00, 0x52, 0x05, 0x66, 0x69, 0x6c, 0x65, 0x73,
+	0x12, 0x16, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48,
+	0x00, 0x52, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x42, 0x0a, 0x0a, 0x08, 0x72, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x2a, 0x24, 0x0a, 0x0e, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x4d,
+	0x61, 0x6e, 0x61, 0x67, 0x65, 0x72, 0x12, 0x07, 0x0a, 0x03, 0x4e, 0x50, 0x4d, 0x10, 0x00, 0x12,
+	0x09, 0x0a, 0x05, 0x42, 0x45, 0x52, 0x52, 0x59, 0x10, 0x01, 0x42, 0x0b, 0x5a, 0x09, 0x66, 0x66,
+	0x69, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2041,64 +2511,78 @@ func file_turborepo_ffi_messages_proto_rawDescGZIP() []byte {
 }
 
 var file_turborepo_ffi_messages_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_turborepo_ffi_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_turborepo_ffi_messages_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
 var file_turborepo_ffi_messages_proto_goTypes = []interface{}{
-	(PackageManager)(0),             // 0: PackageManager
-	(*TurboDataDirResp)(nil),        // 1: TurboDataDirResp
-	(*GlobReq)(nil),                 // 2: GlobReq
-	(*GlobResp)(nil),                // 3: GlobResp
-	(*GlobRespList)(nil),            // 4: GlobRespList
-	(*ChangedFilesReq)(nil),         // 5: ChangedFilesReq
-	(*ChangedFilesResp)(nil),        // 6: ChangedFilesResp
-	(*ChangedFilesList)(nil),        // 7: ChangedFilesList
-	(*PreviousContentReq)(nil),      // 8: PreviousContentReq
-	(*PreviousContentResp)(nil),     // 9: PreviousContentResp
-	(*PackageDependency)(nil),       // 10: PackageDependency
-	(*PackageDependencyList)(nil),   // 11: PackageDependencyList
-	(*WorkspaceDependencies)(nil),   // 12: WorkspaceDependencies
-	(*TransitiveDepsRequest)(nil),   // 13: TransitiveDepsRequest
-	(*TransitiveDepsResponse)(nil),  // 14: TransitiveDepsResponse
-	(*AdditionalBerryData)(nil),     // 15: AdditionalBerryData
-	(*LockfilePackage)(nil),         // 16: LockfilePackage
-	(*LockfilePackageList)(nil),     // 17: LockfilePackageList
-	(*SubgraphRequest)(nil),         // 18: SubgraphRequest
-	(*SubgraphResponse)(nil),        // 19: SubgraphResponse
-	(*PatchesRequest)(nil),          // 20: PatchesRequest
-	(*PatchesResponse)(nil),         // 21: PatchesResponse
-	(*Patches)(nil),                 // 22: Patches
-	(*GlobalChangeRequest)(nil),     // 23: GlobalChangeRequest
-	(*GlobalChangeResponse)(nil),    // 24: GlobalChangeResponse
-	(*RecursiveCopyRequest)(nil),    // 25: RecursiveCopyRequest
-	(*RecursiveCopyResponse)(nil),   // 26: RecursiveCopyResponse
-	(*VerifySignatureRequest)(nil),  // 27: VerifySignatureRequest
-	(*VerifySignatureResponse)(nil), // 28: VerifySignatureResponse
-	nil,                             // 29: WorkspaceDependencies.DependenciesEntry
-	nil,                             // 30: TransitiveDepsRequest.WorkspacesEntry
-	nil,                             // 31: AdditionalBerryData.ResolutionsEntry
+	(PackageManager)(0),                              // 0: PackageManager
+	(*TurboDataDirResp)(nil),                         // 1: TurboDataDirResp
+	(*GlobReq)(nil),                                  // 2: GlobReq
+	(*GlobResp)(nil),                                 // 3: GlobResp
+	(*GlobRespList)(nil),                             // 4: GlobRespList
+	(*ChangedFilesReq)(nil),                          // 5: ChangedFilesReq
+	(*ChangedFilesResp)(nil),                         // 6: ChangedFilesResp
+	(*ChangedFilesList)(nil),                         // 7: ChangedFilesList
+	(*PreviousContentReq)(nil),                       // 8: PreviousContentReq
+	(*PreviousContentResp)(nil),                      // 9: PreviousContentResp
+	(*PackageDependency)(nil),                        // 10: PackageDependency
+	(*PackageDependencyList)(nil),                    // 11: PackageDependencyList
+	(*WorkspaceDependencies)(nil),                    // 12: WorkspaceDependencies
+	(*TransitiveDepsRequest)(nil),                    // 13: TransitiveDepsRequest
+	(*TransitiveDepsResponse)(nil),                   // 14: TransitiveDepsResponse
+	(*AdditionalBerryData)(nil),                      // 15: AdditionalBerryData
+	(*LockfilePackage)(nil),                          // 16: LockfilePackage
+	(*LockfilePackageList)(nil),                      // 17: LockfilePackageList
+	(*SubgraphRequest)(nil),                          // 18: SubgraphRequest
+	(*SubgraphResponse)(nil),                         // 19: SubgraphResponse
+	(*PatchesRequest)(nil),                           // 20: PatchesRequest
+	(*PatchesResponse)(nil),                          // 21: PatchesResponse
+	(*Patches)(nil),                                  // 22: Patches
+	(*GlobalChangeRequest)(nil),                      // 23: GlobalChangeRequest
+	(*GlobalChangeResponse)(nil),                     // 24: GlobalChangeResponse
+	(*RecursiveCopyRequest)(nil),                     // 25: RecursiveCopyRequest
+	(*RecursiveCopyResponse)(nil),                    // 26: RecursiveCopyResponse
+	(*GetPackageFileHashesFromGitIndexRequest)(nil),  // 27: GetPackageFileHashesFromGitIndexRequest
+	(*FileHashes)(nil),                               // 28: FileHashes
+	(*GetPackageFileHashesFromGitIndexResponse)(nil), // 29: GetPackageFileHashesFromGitIndexResponse
+	(*NewAPIClientRequest)(nil),                      // 30: NewAPIClientRequest
+	(*NewArtifactSignatureAuthenticatorRequest)(nil), // 31: NewArtifactSignatureAuthenticatorRequest
+	(*NewHttpCacheRequest)(nil),                      // 32: NewHttpCacheRequest
+	(*RetrieveRequest)(nil),                          // 33: RetrieveRequest
+	(*RestoredFilesList)(nil),                        // 34: RestoredFilesList
+	(*RetrieveResponse)(nil),                         // 35: RetrieveResponse
+	nil,                                              // 36: WorkspaceDependencies.DependenciesEntry
+	nil,                                              // 37: TransitiveDepsRequest.WorkspacesEntry
+	nil,                                              // 38: AdditionalBerryData.ResolutionsEntry
+	nil,                                              // 39: FileHashes.HashesEntry
 }
 var file_turborepo_ffi_messages_proto_depIdxs = []int32{
 	4,  // 0: GlobResp.files:type_name -> GlobRespList
 	7,  // 1: ChangedFilesResp.files:type_name -> ChangedFilesList
 	10, // 2: PackageDependencyList.list:type_name -> PackageDependency
-	29, // 3: WorkspaceDependencies.dependencies:type_name -> WorkspaceDependencies.DependenciesEntry
+	36, // 3: WorkspaceDependencies.dependencies:type_name -> WorkspaceDependencies.DependenciesEntry
 	0,  // 4: TransitiveDepsRequest.package_manager:type_name -> PackageManager
-	30, // 5: TransitiveDepsRequest.workspaces:type_name -> TransitiveDepsRequest.WorkspacesEntry
+	37, // 5: TransitiveDepsRequest.workspaces:type_name -> TransitiveDepsRequest.WorkspacesEntry
 	15, // 6: TransitiveDepsRequest.resolutions:type_name -> AdditionalBerryData
 	12, // 7: TransitiveDepsResponse.dependencies:type_name -> WorkspaceDependencies
-	31, // 8: AdditionalBerryData.resolutions:type_name -> AdditionalBerryData.ResolutionsEntry
+	38, // 8: AdditionalBerryData.resolutions:type_name -> AdditionalBerryData.ResolutionsEntry
 	16, // 9: LockfilePackageList.list:type_name -> LockfilePackage
 	0,  // 10: SubgraphRequest.package_manager:type_name -> PackageManager
 	15, // 11: SubgraphRequest.resolutions:type_name -> AdditionalBerryData
 	0,  // 12: PatchesRequest.package_manager:type_name -> PackageManager
 	22, // 13: PatchesResponse.patches:type_name -> Patches
 	0,  // 14: GlobalChangeRequest.package_manager:type_name -> PackageManager
-	17, // 15: WorkspaceDependencies.DependenciesEntry.value:type_name -> LockfilePackageList
-	11, // 16: TransitiveDepsRequest.WorkspacesEntry.value:type_name -> PackageDependencyList
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	39, // 15: FileHashes.hashes:type_name -> FileHashes.HashesEntry
+	28, // 16: GetPackageFileHashesFromGitIndexResponse.hashes:type_name -> FileHashes
+	30, // 17: NewHttpCacheRequest.api_client:type_name -> NewAPIClientRequest
+	31, // 18: NewHttpCacheRequest.authenticator:type_name -> NewArtifactSignatureAuthenticatorRequest
+	32, // 19: RetrieveRequest.http_cache:type_name -> NewHttpCacheRequest
+	34, // 20: RetrieveResponse.files:type_name -> RestoredFilesList
+	17, // 21: WorkspaceDependencies.DependenciesEntry.value:type_name -> LockfilePackageList
+	11, // 22: TransitiveDepsRequest.WorkspacesEntry.value:type_name -> PackageDependencyList
+	23, // [23:23] is the sub-list for method output_type
+	23, // [23:23] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_turborepo_ffi_messages_proto_init() }
@@ -2420,7 +2904,7 @@ func file_turborepo_ffi_messages_proto_init() {
 			}
 		}
 		file_turborepo_ffi_messages_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*VerifySignatureRequest); i {
+			switch v := v.(*GetPackageFileHashesFromGitIndexRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2432,7 +2916,91 @@ func file_turborepo_ffi_messages_proto_init() {
 			}
 		}
 		file_turborepo_ffi_messages_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*VerifySignatureResponse); i {
+			switch v := v.(*FileHashes); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_turborepo_ffi_messages_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetPackageFileHashesFromGitIndexResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_turborepo_ffi_messages_proto_msgTypes[29].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*NewAPIClientRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_turborepo_ffi_messages_proto_msgTypes[30].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*NewArtifactSignatureAuthenticatorRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_turborepo_ffi_messages_proto_msgTypes[31].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*NewHttpCacheRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_turborepo_ffi_messages_proto_msgTypes[32].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RetrieveRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_turborepo_ffi_messages_proto_msgTypes[33].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RestoredFilesList); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_turborepo_ffi_messages_proto_msgTypes[34].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RetrieveResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2472,10 +3040,14 @@ func file_turborepo_ffi_messages_proto_init() {
 		(*PatchesResponse_Error)(nil),
 	}
 	file_turborepo_ffi_messages_proto_msgTypes[25].OneofWrappers = []interface{}{}
-	file_turborepo_ffi_messages_proto_msgTypes[26].OneofWrappers = []interface{}{}
-	file_turborepo_ffi_messages_proto_msgTypes[27].OneofWrappers = []interface{}{
-		(*VerifySignatureResponse_Verified)(nil),
-		(*VerifySignatureResponse_Error)(nil),
+	file_turborepo_ffi_messages_proto_msgTypes[28].OneofWrappers = []interface{}{
+		(*GetPackageFileHashesFromGitIndexResponse_Hashes)(nil),
+		(*GetPackageFileHashesFromGitIndexResponse_Error)(nil),
+	}
+	file_turborepo_ffi_messages_proto_msgTypes[29].OneofWrappers = []interface{}{}
+	file_turborepo_ffi_messages_proto_msgTypes[34].OneofWrappers = []interface{}{
+		(*RetrieveResponse_Files)(nil),
+		(*RetrieveResponse_Error)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -2483,7 +3055,7 @@ func file_turborepo_ffi_messages_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_turborepo_ffi_messages_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   31,
+			NumMessages:   39,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

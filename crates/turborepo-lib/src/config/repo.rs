@@ -3,7 +3,7 @@ use std::{collections::HashMap, env};
 use anyhow::Result;
 use config::Config;
 use serde::{Deserialize, Serialize};
-use turbopath::{AbsoluteSystemPath, AbsoluteSystemPathBuf};
+use turbopath::{AbsoluteSystemPath, AbsoluteSystemPathBuf, RelativeSystemPathBuf};
 
 use super::{write_to_disk, MappedEnvironment};
 
@@ -79,7 +79,8 @@ impl RepoConfig {
 }
 
 pub fn get_repo_config_path(repo_root: &AbsoluteSystemPath) -> AbsoluteSystemPathBuf {
-    repo_root.join_components(&[".turbo", "config.json"])
+    let config = RelativeSystemPathBuf::new(".turbo/config.json").expect("is relative");
+    repo_root.join_relative(&config)
 }
 
 impl RepoConfigLoader {

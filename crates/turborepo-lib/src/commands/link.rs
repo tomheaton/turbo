@@ -16,6 +16,7 @@ use dialoguer::{theme::ColorfulTheme, Confirm};
 use dirs_next::home_dir;
 #[cfg(test)]
 use rand::Rng;
+use turbopath::RelativeSystemPathBuf;
 use turborepo_api_client::{APIClient, CachingStatus, Space, Team};
 
 #[cfg(not(test))]
@@ -166,8 +167,11 @@ pub async fn link(
             verify_caching_enabled(&api_client, team_id, token, Some(selected_team.clone()))
                 .await?;
 
-            fs::create_dir_all(base.repo_root.join_component(".turbo"))
-                .context("could not create .turbo directory")?;
+            fs::create_dir_all(
+                base.repo_root
+                    .join_relative(RelativeSystemPathBuf::new(".turbo").expect("relative")),
+            )
+            .context("could not create .turbo directory")?;
             base.repo_config_mut()?
                 .set_team_id(Some(team_id.to_string()))?;
 
@@ -395,7 +399,9 @@ fn enable_caching(url: &str) -> Result<()> {
 }
 
 fn add_turbo_to_gitignore(base: &CommandBase) -> Result<()> {
-    let gitignore_path = base.repo_root.join_component(".gitignore");
+    let gitignore_path = base
+        .repo_root
+        .join_relative(RelativeSystemPathBuf::new(".gitignore").expect("relative"));
 
     if !gitignore_path.exists() {
         let mut gitignore = File::create(gitignore_path)?;
@@ -419,7 +425,9 @@ fn add_turbo_to_gitignore(base: &CommandBase) -> Result<()> {
 }
 
 fn add_space_id_to_turbo_json(base: &CommandBase, space_id: &str) -> Result<()> {
-    let turbo_json_path = base.repo_root.join_component("turbo.json");
+    let turbo_json_path = base
+        .repo_root
+        .join_relative(RelativeSystemPathBuf::new("turbo.json").expect("relative"));
 
     if !turbo_json_path.exists() {
         return Err(anyhow!("turbo.json not found."));
@@ -453,7 +461,7 @@ mod test {
 
     use tempfile::{NamedTempFile, TempDir};
     use tokio::sync::OnceCell;
-    use turbopath::AbsoluteSystemPathBuf;
+    use turbopath::{AbsoluteSystemPathBuf, RelativeSystemPathBuf};
     use vercel_api_mock::start_test_server;
 
     use crate::{
@@ -550,7 +558,9 @@ mod test {
         };
 
         // turbo config
-        let turbo_json_file = base.repo_root.join_component("turbo.json");
+        let turbo_json_file = base
+            .repo_root
+            .join_relative(RelativeSystemPathBuf::new("turbo.json").expect("relative"));
 
         fs::write(
             turbo_json_file.as_path(),

@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 license = "MPL-2.0"
 
+[features]
+default = ["rustls-tls"]
+native-tls = ["turborepo-cache/native-tls", "turborepo-api-client/native-tls"]
+rustls-tls = ["turborepo-cache/rustls-tls", "turborepo-api-client/rustls-tls"]
+
 [lib]
 crate-type = ["staticlib"]
 
@@ -11,7 +16,9 @@ crate-type = ["staticlib"]
 directories = "4.0.1"
 prost = "0.11.6"
 thiserror = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
 turbopath = { workspace = true }
+turborepo-api-client = { workspace = true }
 turborepo-cache = { workspace = true }
 turborepo-fs = { workspace = true }
 turborepo-lockfiles = { workspace = true }

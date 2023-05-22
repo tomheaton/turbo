@@ -89,7 +89,9 @@ func safeMkdirAll(dirCache *cachedDirTree, anchor turbopath.AbsoluteSystemPath, 
 
 // checkPath ensures that the resolved path (if restoring symlinks).
 // It makes sure to never traverse outside of the anchor.
-func checkPath(originalAnchor turbopath.AbsoluteSystemPath, accumulatedAnchor turbopath.AbsoluteSystemPath, segment turbopath.RelativeSystemPath) (turbopath.AbsoluteSystemPath, error) {
+func checkPath(originalAnchor turbopath.AbsoluteSystemPath,
+	accumulatedAnchor turbopath.AbsoluteSystemPath,
+	segment turbopath.RelativeSystemPath) (turbopath.AbsoluteSystemPath, error) {
 	// Check if the segment itself is sneakily an absolute path...
 	// (looking at you, Windows. CON, AUX...)
 	if filepath.IsAbs(segment.ToString()) {

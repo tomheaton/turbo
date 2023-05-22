@@ -169,6 +169,13 @@ func TestOpen(t *testing.T) {
 				},
 				{
 					Header: &tar.Header{
+						Name:     "one/two/a/",
+						Typeflag: tar.TypeDir,
+						Mode:     0755,
+					},
+				},
+				{
+					Header: &tar.Header{
 						Name:     "one/two/three/file-one",
 						Typeflag: tar.TypeReg,
 						Mode:     0644,
@@ -179,13 +186,6 @@ func TestOpen(t *testing.T) {
 						Name:     "one/two/three/file-two",
 						Typeflag: tar.TypeReg,
 						Mode:     0644,
-					},
-				},
-				{
-					Header: &tar.Header{
-						Name:     "one/two/a/",
-						Typeflag: tar.TypeDir,
-						Mode:     0755,
 					},
 				},
 				{
@@ -225,6 +225,10 @@ func TestOpen(t *testing.T) {
 						FileMode: 0 | os.ModeDir | 0755,
 					},
 					{
+						Name:     "one/two/a",
+						FileMode: 0 | os.ModeDir | 0755,
+					},
+					{
 						Name:     "one/two/three/file-one",
 						FileMode: 0644,
 					},
@@ -232,10 +236,7 @@ func TestOpen(t *testing.T) {
 						Name:     "one/two/three/file-two",
 						FileMode: 0644,
 					},
-					{
-						Name:     "one/two/a",
-						FileMode: 0 | os.ModeDir | 0755,
-					},
+
 					{
 						Name:     "one/two/a/file",
 						FileMode: 0644,
@@ -293,9 +294,9 @@ func TestOpen(t *testing.T) {
 					"one",
 					"one/two",
 					"one/two/three",
+					"one/two/a",
 					"one/two/three/file-one",
 					"one/two/three/file-two",
-					"one/two/a",
 					"one/two/a/file",
 					"one/two/b",
 					"one/two/b/file",

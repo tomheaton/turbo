@@ -7,12 +7,12 @@ package ffi
 
 // #include "bindings.h"
 //
-// #cgo darwin,arm64 LDFLAGS:  -L${SRCDIR} -lturborepo_ffi_darwin_arm64  -lz -liconv -framework Security
-// #cgo darwin,amd64 LDFLAGS:  -L${SRCDIR} -lturborepo_ffi_darwin_amd64  -lz -liconv -framework Security
+// #cgo darwin,arm64 LDFLAGS:  -L${SRCDIR} -lturborepo_ffi_darwin_arm64  -lz -liconv -framework CoreFoundation
+// #cgo darwin,amd64 LDFLAGS:  -L${SRCDIR} -lturborepo_ffi_darwin_amd64  -lz -liconv -framework CoreFoundation
 // #cgo linux,arm64,staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_arm64 -lunwind
 // #cgo linux,amd64,staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_amd64 -lunwind
-// #cgo linux,arm64,!staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_arm64 -lz
-// #cgo linux,amd64,!staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_amd64 -lz
+// #cgo linux,arm64,!staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_arm64 -lz -lm
+// #cgo linux,amd64,!staticbinary LDFLAGS:   -L${SRCDIR} -lturborepo_ffi_linux_amd64 -lz -lm
 // #cgo windows,amd64 LDFLAGS: -L${SRCDIR} -lturborepo_ffi_windows_amd64 -lole32 -lbcrypt -lws2_32 -luserenv
 import "C"
 
@@ -23,6 +23,7 @@ import (
 	"unsafe"
 
 	ffi_proto "github.com/vercel/turbo/cli/internal/ffi/proto"
+	"github.com/vercel/turbo/cli/internal/turbopath"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -109,16 +110,24 @@ func GetTurboDataDir() string {
 // Go convention is to use an empty string for an uninitialized or null-valued
 // string. Rust convention is to use an Option<String> for the same purpose, which
 // is encoded on the Go side as *string. This converts between the two.
-func stringToRef(s string) *string {
+func StringToRef(s string) *string {
 	if s == "" {
 		return nil
 	}
 	return &s
 }
 
+// Uint64ToRef is the same as `StringToRef`, but for uint64
+func Uint64ToRef(i uint64) *uint64 {
+	if i == 0 {
+		return nil
+	}
+	return &i
+}
+
 // ChangedFiles returns the files changed in between two commits, the workdir and the index, and optionally untracked files
 func ChangedFiles(gitRoot string, turboRoot string, fromCommit string, toCommit string) ([]string, error) {
-	fromCommitRef := stringToRef(fromCommit)
+	fromCommitRef := StringToRef(fromCommit)
 
 	req := ffi_proto.ChangedFilesReq{
 		GitRoot:    gitRoot,
@@ -314,27 +323,55 @@ func GlobalChange(packageManager string, prevContents []byte, currContents []byt
 	return resp.GetGlobalChange()
 }
 
-// VerifySignature checks that the signature of an artifact matches the expected tag
-func VerifySignature(teamID []byte, hash string, artifactBody []byte, expectedTag string, secretKeyOverride []byte) (bool, error) {
-	req := ffi_proto.VerifySignatureRequest{
-		TeamId:            teamID,
-		Hash:              hash,
-		ArtifactBody:      artifactBody,
-		ExpectedTag:       expectedTag,
-		SecretKeyOverride: secretKeyOverride,
+func HTTPCacheRetrieve(hash string, baseURL string, timeout uint64, version string, token string, teamID string, teamSlug string, usePreflight bool, hasAuthenticator bool, repoRoot turbopath.AbsoluteSystemPath) (bool, []turbopath.AnchoredSystemPath, int, error) {
+	apiClientReq := ffi_proto.NewAPIClientRequest{
+		BaseUrl:      baseURL,
+		Timeout:      Uint64ToRef(timeout),
+		Version:      version,
+		Token:        token,
+		TeamId:       teamID,
+		TeamSlug:     StringToRef(teamSlug),
+		UsePreflight: usePreflight,
 	}
-	reqBuf := Marshal(&req)
-	resBuf := C.verify_signature(reqBuf)
-	reqBuf.Free()
 
-	resp := ffi_proto.VerifySignatureResponse{}
-	if err := Unmarshal(resBuf, resp.ProtoReflect().Interface()); err != nil {
+	var authenticator *ffi_proto.NewArtifactSignatureAuthenticatorRequest
+	if hasAuthenticator {
+		authenticator = &ffi_proto.NewArtifactSignatureAuthenticatorRequest{
+			TeamId: teamID,
+		}
+	}
+
+	httpCacheReq := ffi_proto.NewHttpCacheRequest{
+		ApiClient:     &apiClientReq,
+		Authenticator: authenticator,
+
+		RepoRoot: repoRoot.ToString(),
+	}
+
+	req := ffi_proto.RetrieveRequest{
+		Hash:      hash,
+		HttpCache: &httpCacheReq,
+	}
+
+	reqBuf := Marshal(&req)
+	defer reqBuf.Free()
+
+	respBuf := C.retrieve(reqBuf)
+	resp := ffi_proto.RetrieveResponse{}
+	if err := Unmarshal(respBuf, resp.ProtoReflect().Interface()); err != nil {
 		panic(err)
 	}
-
 	if err := resp.GetError(); err != "" {
-		return false, errors.New(err)
+		return false, nil, 0, errors.New(err)
 	}
 
-	return resp.GetVerified(), nil
+	restoredFilesList := resp.GetFiles()
+	filesAsStrings := restoredFilesList.GetFiles()
+	duration := restoredFilesList.GetDuration()
+	files := make([]turbopath.AnchoredSystemPath, len(filesAsStrings))
+	for i, file := range filesAsStrings {
+		files[i] = turbopath.AnchoredSystemPath(file)
+	}
+
+	return true, files, int(duration), nil
 }

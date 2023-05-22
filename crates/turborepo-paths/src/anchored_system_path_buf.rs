@@ -1,11 +1,26 @@
-use std::path::{Path, PathBuf};
+use std::{
+    borrow::Borrow,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AbsoluteSystemPath, IntoSystem, PathError, RelativeUnixPathBuf};
+use crate::{AbsoluteSystemPath, AnchoredSystemPath, IntoSystem, PathError, RelativeUnixPathBuf};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize)]
-pub struct AnchoredSystemPathBuf(PathBuf);
+pub struct AnchoredSystemPathBuf(pub(crate) PathBuf);
+
+impl Borrow<AnchoredSystemPath> for AnchoredSystemPathBuf {
+    fn borrow(&self) -> &AnchoredSystemPath {
+        unsafe { AnchoredSystemPath::new_unchecked(self.0.as_path()) }
+    }
+}
+
+impl AsRef<AnchoredSystemPath> for AnchoredSystemPathBuf {
+    fn as_ref(&self) -> &AnchoredSystemPath {
+        self.borrow()
+    }
+}
 
 impl TryFrom<&Path> for AnchoredSystemPathBuf {
     type Error = PathError;
@@ -21,6 +36,17 @@ impl TryFrom<&Path> for AnchoredSystemPathBuf {
 }
 
 impl AnchoredSystemPathBuf {
+    // Create an AnchoredSystemPathBuf from a PathBuf. Validates that it's relative
+    // and automatically converts to system format. Mostly used for testing
+    pub fn from_path_buf(path: impl Into<PathBuf>) -> Result<Self, PathError> {
+        let path = path.into();
+        if path.is_absolute() {
+            let bad_path = path.display().to_string();
+            return Err(PathValidationError::NotRelative(bad_path).into());
+        }
+
+        Ok(AnchoredSystemPathBuf(path.into_system()?))
+    }
     pub fn new(
         root: impl AsRef<AbsoluteSystemPath>,
         path: impl AsRef<AbsoluteSystemPath>,
@@ -36,14 +62,16 @@ impl AnchoredSystemPathBuf {
         Ok(AnchoredSystemPathBuf(stripped_path))
     }
 
-    pub fn from_raw<P: AsRef<Path>>(raw: P) -> Result<Self, PathError> {
-        let system_path = raw.as_ref();
-        let system_path = system_path.into_system()?;
-        Ok(Self(system_path))
+    pub unsafe fn new_unchecked(path: impl Into<PathBuf>) -> Self {
+        AnchoredSystemPathBuf(path.into())
     }
 
-    pub(crate) fn as_path(&self) -> &Path {
+    pub fn as_path(&self) -> &Path {
         self.0.as_path()
+    }
+
+    pub fn as_anchored_path(&self) -> &AnchoredSystemPath {
+        unsafe { AnchoredSystemPath::new_unchecked(self.0.as_path()) }
     }
 
     pub fn to_str(&self) -> Result<&str, PathError> {
@@ -69,10 +97,20 @@ impl AnchoredSystemPathBuf {
             return RelativeUnixPathBuf::new(unix_str.as_bytes());
         }
     }
+
+    pub fn push(&mut self, path: impl AsRef<Path>) {
+        self.0.push(path.as_ref());
+    }
 }
 
 impl From<AnchoredSystemPathBuf> for PathBuf {
     fn from(path: AnchoredSystemPathBuf) -> PathBuf {
         path.0
+    }
+}
+
+impl AsRef<Path> for AnchoredSystemPathBuf {
+    fn as_ref(&self) -> &Path {
+        self.0.as_path()
     }
 }

@@ -4,8 +4,6 @@
 package cache
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,16 +15,16 @@ import (
 	"github.com/vercel/turbo/cli/internal/turbopath"
 )
 
-type client interface {
+type cacheAPIClient interface {
 	PutArtifact(hash string, body []byte, duration int, tag string) error
 	FetchArtifact(hash string) (*http.Response, error)
 	ArtifactExists(hash string) (*http.Response, error)
 	GetTeamID() string
 }
 
-type httpCache struct {
+type HttpCache struct {
 	writable       bool
-	client         client
+	client         cacheAPIClient
 	requestLimiter limiter
 	recorder       analytics.Recorder
 	signerVerifier *ArtifactSignatureAuthentication
@@ -42,8 +40,18 @@ func (l limiter) acquire() {
 func (l limiter) release() {
 	<-l
 }
+func (cache *HttpCache) GetAPIClient() cacheAPIClient {
+	return cache.client
+}
+func (cache *HttpCache) GetRepoRoot() turbopath.AbsoluteSystemPath {
+	return cache.repoRoot
+}
 
-func (cache *httpCache) Put(anchor turbopath.AbsoluteSystemPath, hash string, duration int, files []turbopath.AnchoredSystemPath) error {
+func (cache *HttpCache) GetAuthenticator() *ArtifactSignatureAuthentication {
+	return cache.signerVerifier
+}
+
+func (cache *HttpCache) Put(anchor turbopath.AbsoluteSystemPath, hash string, duration int, files []turbopath.AnchoredSystemPath) error {
 	// if cache.writable {
 	cache.requestLimiter.acquire()
 	defer cache.requestLimiter.release()
@@ -77,7 +85,7 @@ func (cache *httpCache) Put(anchor turbopath.AbsoluteSystemPath, hash string, du
 }
 
 // write writes a series of files into the given Writer.
-func (cache *httpCache) write(w io.WriteCloser, anchor turbopath.AbsoluteSystemPath, files []turbopath.AnchoredSystemPath, cacheErrorChan chan error) {
+func (cache *HttpCache) write(w io.WriteCloser, anchor turbopath.AbsoluteSystemPath, files []turbopath.AnchoredSystemPath, cacheErrorChan chan error) {
 	cacheItem := cacheitem.CreateWriter(w)
 
 	for _, file := range files {
@@ -92,7 +100,7 @@ func (cache *httpCache) write(w io.WriteCloser, anchor turbopath.AbsoluteSystemP
 	cacheErrorChan <- cacheItem.Close()
 }
 
-func (cache *httpCache) Fetch(_ turbopath.AbsoluteSystemPath, key string, _ []string) (ItemStatus, []turbopath.AnchoredSystemPath, int, error) {
+func (cache *HttpCache) Fetch(_ turbopath.AbsoluteSystemPath, key string, _ []string) (ItemStatus, []turbopath.AnchoredSystemPath, int, error) {
 	cache.requestLimiter.acquire()
 	defer cache.requestLimiter.release()
 	hit, files, duration, err := cache.retrieve(key)
@@ -104,7 +112,7 @@ func (cache *httpCache) Fetch(_ turbopath.AbsoluteSystemPath, key string, _ []st
 	return ItemStatus{Remote: hit}, files, duration, err
 }
 
-func (cache *httpCache) Exists(key string) ItemStatus {
+func (cache *HttpCache) Exists(key string) ItemStatus {
 	cache.requestLimiter.acquire()
 	defer cache.requestLimiter.release()
 	hit, err := cache.exists(key)
@@ -114,7 +122,7 @@ func (cache *httpCache) Exists(key string) ItemStatus {
 	return ItemStatus{Remote: hit}
 }
 
-func (cache *httpCache) logFetch(hit bool, hash string, duration int) {
+func (cache *HttpCache) logFetch(hit bool, hash string, duration int) {
 	var event string
 	if hit {
 		event = CacheEventHit
@@ -130,7 +138,7 @@ func (cache *httpCache) logFetch(hit bool, hash string, duration int) {
 	cache.recorder.LogEvent(payload)
 }
 
-func (cache *httpCache) exists(hash string) (bool, error) {
+func (cache *HttpCache) exists(hash string) (bool, error) {
 	resp, err := cache.client.ArtifactExists(hash)
 	if err != nil {
 		return false, nil
@@ -146,77 +154,18 @@ func (cache *httpCache) exists(hash string) (bool, error) {
 	return true, err
 }
 
-func (cache *httpCache) retrieve(hash string) (bool, []turbopath.AnchoredSystemPath, int, error) {
-	resp, err := cache.client.FetchArtifact(hash)
-	if err != nil {
-		return false, nil, 0, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return false, nil, 0, nil // doesn't exist - not an error
-	} else if resp.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(resp.Body)
-		return false, nil, 0, fmt.Errorf("%s", string(b))
-	}
-	// If present, extract the duration from the response.
-	duration := 0
-	if resp.Header.Get("x-artifact-duration") != "" {
-		intVar, err := strconv.Atoi(resp.Header.Get("x-artifact-duration"))
-		if err != nil {
-			return false, nil, 0, fmt.Errorf("invalid x-artifact-duration header: %w", err)
-		}
-		duration = intVar
-	}
-	var tarReader io.Reader
-
-	defer func() { _ = resp.Body.Close() }()
-	if cache.signerVerifier.isEnabled() {
-		expectedTag := resp.Header.Get("x-artifact-tag")
-		if expectedTag == "" {
-			// If the verifier is enabled all incoming artifact downloads must have a signature
-			return false, nil, 0, errors.New("artifact verification failed: Downloaded artifact is missing required x-artifact-tag header")
-		}
-		b, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return false, nil, 0, fmt.Errorf("artifact verification failed: %w", err)
-		}
-		isValid, err := cache.signerVerifier.validate(hash, b, expectedTag)
-		if err != nil {
-			return false, nil, 0, fmt.Errorf("artifact verification failed: %w", err)
-		}
-		if !isValid {
-			err = fmt.Errorf("artifact verification failed: artifact tag does not match expected tag %s", expectedTag)
-			return false, nil, 0, err
-		}
-		// The artifact has been verified and the body can be read and untarred
-		tarReader = bytes.NewReader(b)
-	} else {
-		tarReader = resp.Body
-	}
-	files, err := restoreTar(cache.repoRoot, tarReader)
-	if err != nil {
-		return false, nil, 0, err
-	}
-	return true, files, duration, nil
-}
-
-func restoreTar(root turbopath.AbsoluteSystemPath, reader io.Reader) ([]turbopath.AnchoredSystemPath, error) {
-	cache := cacheitem.FromReader(reader, true)
-	return cache.Restore(root)
-}
-
-func (cache *httpCache) Clean(_ turbopath.AbsoluteSystemPath) {
+func (cache *HttpCache) Clean(_ turbopath.AbsoluteSystemPath) {
 	// Not possible; this implementation can only clean for a hash.
 }
 
-func (cache *httpCache) CleanAll() {
+func (cache *HttpCache) CleanAll() {
 	// Also not possible.
 }
 
-func (cache *httpCache) Shutdown() {}
+func (cache *HttpCache) Shutdown() {}
 
-func newHTTPCache(opts Opts, client client, recorder analytics.Recorder, repoRoot turbopath.AbsoluteSystemPath) *httpCache {
-	return &httpCache{
+func newHTTPCache(opts Opts, client cacheAPIClient, recorder analytics.Recorder, repoRoot turbopath.AbsoluteSystemPath) *HttpCache {
+	return &HttpCache{
 		writable:       true,
 		client:         client,
 		requestLimiter: make(limiter, 20),
@@ -225,7 +174,7 @@ func newHTTPCache(opts Opts, client client, recorder analytics.Recorder, repoRoo
 		signerVerifier: &ArtifactSignatureAuthentication{
 			// TODO(Gaspar): this should use RemoteCacheOptions.TeamId once we start
 			// enforcing team restrictions for repositories.
-			teamID:  client.GetTeamID(),
+			teamId:  client.GetTeamID(),
 			enabled: opts.RemoteCacheOpts.Signature,
 		},
 	}

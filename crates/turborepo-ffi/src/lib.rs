@@ -2,12 +2,14 @@
 //!
 //! Please read the notes about safety (marked with `SAFETY`) in both this file,
 //! and in ffi.go before modifying this file.
+mod cache;
 mod lockfile;
 
 use std::{mem::ManuallyDrop, path::PathBuf};
 
+pub use cache::retrieve;
 pub use lockfile::{patches, subgraph, transitive_closure};
-use turbopath::AbsoluteSystemPathBuf;
+use turbopath::{AbsoluteSystemPathBuf, AnchoredSystemPathBuf, RelativeSystemPathBuf};
 
 mod proto {
     include!(concat!(env!("OUT_DIR"), "/_.rs"));
@@ -162,44 +164,4 @@ pub extern "C" fn recursive_copy(buffer: Buffer) -> Buffer {
         },
     };
     response.into()
-}
-
-#[no_mangle]
-pub extern "C" fn verify_signature(buffer: Buffer) -> Buffer {
-    let req: proto::VerifySignatureRequest = match buffer.into_proto() {
-        Ok(req) => req,
-        Err(err) => {
-            let resp = proto::VerifySignatureResponse {
-                response: Some(proto::verify_signature_response::Response::Error(
-                    err.to_string(),
-                )),
-            };
-            return resp.into();
-        }
-    };
-
-    let authenticator =
-        turborepo_cache::signature_authentication::ArtifactSignatureAuthenticator::new(
-            req.team_id,
-            req.secret_key_override,
-        );
-
-    match authenticator.validate(req.hash.as_bytes(), &req.artifact_body, &req.expected_tag) {
-        Ok(verified) => {
-            let resp = proto::VerifySignatureResponse {
-                response: Some(proto::verify_signature_response::Response::Verified(
-                    verified,
-                )),
-            };
-            resp.into()
-        }
-        Err(err) => {
-            let resp = proto::VerifySignatureResponse {
-                response: Some(proto::verify_signature_response::Response::Error(
-                    err.to_string(),
-                )),
-            };
-            resp.into()
-        }
-    }
 }

@@ -10,7 +10,7 @@ use serde::Serialize;
 
 use crate::{AbsoluteSystemPath, AnchoredSystemPathBuf, IntoSystem, PathError};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct AbsoluteSystemPathBuf(pub(crate) PathBuf);
 
 impl Borrow<AbsoluteSystemPath> for AbsoluteSystemPathBuf {
@@ -65,6 +65,11 @@ impl AbsoluteSystemPathBuf {
         Ok(AbsoluteSystemPathBuf(system_path))
     }
 
+    #[cfg(test)]
+    pub unsafe fn new_unchecked(unchecked_path: impl Into<PathBuf>) -> Self {
+        AbsoluteSystemPathBuf(unchecked_path.into())
+    }
+
     /// Anchors `path` at `self`.
     ///
     /// # Arguments
@@ -83,7 +88,7 @@ impl AbsoluteSystemPathBuf {
     ///   let base = AbsoluteSystemPathBuf::new("/Users/user").unwrap();
     ///   let anchored_path = AbsoluteSystemPathBuf::new("/Users/user/Documents").unwrap();
     ///   let anchored_path = base.anchor(&anchored_path).unwrap();
-    ///   assert_eq!(anchored_path.to_str().unwrap(), "Documents");
+    ///   assert_eq!(anchored_path.as_path(), Path::new("Documents"));
     /// }
     ///
     /// #[cfg(windows)]
@@ -91,7 +96,7 @@ impl AbsoluteSystemPathBuf {
     ///   let base = AbsoluteSystemPathBuf::new("C:\\Users\\user").unwrap();
     ///   let anchored_path = AbsoluteSystemPathBuf::new("C:\\Users\\user\\Documents").unwrap();
     ///   let anchored_path = base.anchor(&anchored_path).unwrap();
-    ///  assert_eq!(anchored_path.to_str().unwrap(), "Documents");
+    ///  assert_eq!(anchored_path.as_path(), Path::new("Documents"));
     /// }
     /// ```
     pub fn anchor(
@@ -143,10 +148,10 @@ impl AbsoluteSystemPathBuf {
         self.0.components()
     }
 
-    pub fn parent(&self) -> Option<Self> {
+    pub fn parent(&self) -> Option<&AbsoluteSystemPath> {
         self.0
             .parent()
-            .map(|p| AbsoluteSystemPathBuf(p.to_path_buf()))
+            .map(|p| unsafe { AbsoluteSystemPath::new_unchecked(p) })
     }
 
     pub fn starts_with<P: AsRef<Path>>(&self, base: P) -> bool {
@@ -157,8 +162,16 @@ impl AbsoluteSystemPathBuf {
         self.0.ends_with(child.as_ref())
     }
 
-    pub fn join_component(&self, segment: &str) -> Self {
-        self.as_absolute_path().join_component(segment)
+    pub fn join_component(&self, component: impl AsRef<Path>) -> AbsoluteSystemPathBuf {
+        AbsoluteSystemPathBuf(self.0.join(component))
+    }
+
+    pub fn join_unix_path_literal<S: AsRef<str>>(
+        &self,
+        unix_path: S,
+    ) -> Result<AbsoluteSystemPathBuf, PathError> {
+        let tail = Path::new(unix_path.as_ref()).into_system()?;
+        Ok(AbsoluteSystemPathBuf(self.0.join(tail)))
     }
 
     pub fn ensure_dir(&self) -> Result<(), io::Error> {
@@ -203,6 +216,10 @@ impl AbsoluteSystemPathBuf {
 
     pub fn to_string_lossy(&self) -> Cow<'_, str> {
         self.0.to_string_lossy()
+    }
+
+    pub fn to_path_buf(&self) -> PathBuf {
+        self.0.clone()
     }
 
     pub fn file_name(&self) -> Option<&OsStr> {
