@@ -1,15 +1,14 @@
 use anyhow::Result;
 use turbo_tasks::{
     graph::{GraphTraversal, NonDeterministic},
-    CompletionVc, CompletionsVc,
+    Completion, Completions, Vc,
 };
 
-use crate::{
-    asset::{Asset, AssetVc},
-    reference::all_referenced_assets,
-};
+use crate::{asset::Asset, reference::all_referenced_assets};
 
-async fn get_referenced_assets(parent: AssetVc) -> Result<impl Iterator<Item = AssetVc> + Send> {
+async fn get_referenced_assets(
+    parent: Vc<Box<dyn Asset>>,
+) -> Result<impl Iterator<Item = Vc<Box<dyn Asset>>> + Send> {
     Ok(all_referenced_assets(parent)
         .await?
         .clone_value()
@@ -19,7 +18,7 @@ async fn get_referenced_assets(parent: AssetVc) -> Result<impl Iterator<Item = A
 /// Returns a completion that changes when any content of any asset in the whole
 /// asset graph changes.
 #[turbo_tasks::function]
-pub async fn any_content_changed(root: AssetVc) -> Result<CompletionVc> {
+pub async fn any_content_changed(root: Vc<Box<dyn Asset>>) -> Result<Vc<Completion>> {
     let completions = NonDeterministic::new()
         .skip_duplicates()
         .visit([root], get_referenced_assets)
@@ -30,14 +29,14 @@ pub async fn any_content_changed(root: AssetVc) -> Result<CompletionVc> {
         .map(content_changed)
         .collect();
 
-    Ok(CompletionsVc::cell(completions).completed())
+    Ok(Vc::cell(completions).completed())
 }
 
 /// Returns a completion that changes when the content of the given asset
 /// changes.
 #[turbo_tasks::function]
-pub async fn content_changed(asset: AssetVc) -> Result<CompletionVc> {
+pub async fn content_changed(asset: Vc<Box<dyn Asset>>) -> Result<Vc<Completion>> {
     // Reading the file content is enough to add as dependency
     asset.content().file_content().await?;
-    Ok(CompletionVc::new())
+    Ok(Completion::new())
 }

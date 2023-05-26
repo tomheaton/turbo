@@ -1,19 +1,23 @@
 use anyhow::Result;
+use turbo_tasks::Vc;
 
-use crate::asset::AssetVc;
+use crate::asset::Asset;
 
 #[turbo_tasks::value_trait]
 pub trait SourceTransform {
-    fn transform(&self, source: AssetVc) -> AssetVc;
+    fn transform(self: Vc<Self>, source: Vc<Box<dyn Asset>>) -> Vc<Box<dyn Asset>>;
 }
 
 #[turbo_tasks::value(transparent)]
-pub struct SourceTransforms(Vec<SourceTransformVc>);
+pub struct SourceTransforms(Vec<Vc<Box<dyn SourceTransform>>>);
 
 #[turbo_tasks::value_impl]
-impl SourceTransformsVc {
+impl SourceTransforms {
     #[turbo_tasks::function]
-    pub async fn transform(self, source: AssetVc) -> Result<AssetVc> {
+    pub async fn transform(
+        self: Vc<Self>,
+        source: Vc<Box<dyn Asset>>,
+    ) -> Result<Vc<Box<dyn Asset>>> {
         Ok(self
             .await?
             .iter()

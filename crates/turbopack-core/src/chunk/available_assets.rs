@@ -3,14 +3,13 @@ use std::iter::once;
 use anyhow::Result;
 use turbo_tasks::{
     graph::{GraphTraversal, ReverseTopological},
-    primitives::{BoolVc, U64Vc},
-    TryJoinIterExt, ValueToString,
+    TryJoinIterExt, ValueToString, Vc,
 };
 use turbo_tasks_hash::Xxh3Hash64Hasher;
 
-use super::{ChunkableAssetReference, ChunkableAssetReferenceVc, ChunkingType};
+use super::{ChunkableAssetReference, ChunkingType};
 use crate::{
-    asset::{Asset, AssetVc, AssetsSetVc},
+    asset::{Asset, AssetsSet},
     reference::AssetReference,
 };
 
@@ -19,24 +18,27 @@ use crate::{
 /// `include` queries.
 #[turbo_tasks::value]
 pub struct AvailableAssets {
-    parent: Option<AvailableAssetsVc>,
-    roots: Vec<AssetVc>,
+    parent: Option<Vc<AvailableAssets>>,
+    roots: Vec<Vc<Box<dyn Asset>>>,
 }
 
 #[turbo_tasks::value_impl]
-impl AvailableAssetsVc {
+impl AvailableAssets {
     #[turbo_tasks::function]
-    fn new_normalized(parent: Option<AvailableAssetsVc>, roots: Vec<AssetVc>) -> Self {
+    fn new_normalized(
+        parent: Option<Vc<AvailableAssets>>,
+        roots: Vec<Vc<Box<dyn Asset>>>,
+    ) -> Vc<Self> {
         AvailableAssets { parent, roots }.cell()
     }
 
     #[turbo_tasks::function]
-    pub fn new(roots: Vec<AssetVc>) -> Self {
-        Self::new_normalized(None, roots)
+    pub fn new(roots: Vec<Vc<Box<dyn Asset>>>) -> Vc<Self> {
+        Vc::<Self>::new_normalized(None, roots)
     }
 
     #[turbo_tasks::function]
-    pub async fn with_roots(self, roots: Vec<AssetVc>) -> Result<Self> {
+    pub async fn with_roots(self: Vc<Self>, roots: Vec<Vc<Box<dyn Asset>>>) -> Result<Vc<Self>> {
         let roots = roots
             .into_iter()
             .map(|root| async move { Ok((self.includes(root).await?, root)) })
@@ -45,11 +47,11 @@ impl AvailableAssetsVc {
             .into_iter()
             .filter_map(|(included, root)| (!*included).then_some(root))
             .collect();
-        Ok(Self::new_normalized(Some(self), roots))
+        Ok(Vc::<Self>::new_normalized(Some(self), roots))
     }
 
     #[turbo_tasks::function]
-    pub async fn hash(self) -> Result<U64Vc> {
+    pub async fn hash(self: Vc<Self>) -> Result<Vc<u64>> {
         let this = self.await?;
         let mut hasher = Xxh3Hash64Hasher::new();
         if let Some(parent) = this.parent {
@@ -60,20 +62,20 @@ impl AvailableAssetsVc {
         for root in &this.roots {
             hasher.write_value(root.ident().to_string().await?);
         }
-        Ok(U64Vc::cell(hasher.finish()))
+        Ok(Vc::cell(hasher.finish()))
     }
 
     #[turbo_tasks::function]
-    pub async fn includes(self, asset: AssetVc) -> Result<BoolVc> {
+    pub async fn includes(self: Vc<Self>, asset: Vc<Box<dyn Asset>>) -> Result<Vc<bool>> {
         let this = self.await?;
         if let Some(parent) = this.parent {
             if *parent.includes(asset).await? {
-                return Ok(BoolVc::cell(true));
+                return Ok(Vc::cell(true));
             }
         }
         for root in this.roots.iter() {
             if chunkable_assets_set(*root).await?.contains(&asset) {
-                return Ok(BoolVc::cell(true));
+                return Ok(Vc::cell(true));
             }
         }
         Ok(Vc::cell(false))
@@ -81,13 +83,15 @@ impl AvailableAssetsVc {
 }
 
 #[turbo_tasks::function]
-async fn chunkable_assets_set(root: AssetVc) -> Result<AssetsSetVc> {
+async fn chunkable_assets_set(root: Vc<Box<dyn Asset>>) -> Result<Vc<AssetsSet>> {
     let assets = ReverseTopological::new()
         .skip_duplicates()
-        .visit(once(root), |&asset: &AssetVc| async move {
+        .visit(once(root), |&asset: &Vc<Box<dyn Asset>>| async move {
             let mut results = Vec::new();
             for reference in asset.references().await?.iter() {
-                if let Some(chunkable) = ChunkableAssetReferenceVc::resolve_from(reference).await? {
+                if let Some(chunkable) =
+                    Vc::try_resolve_downcast::<ChunkableAssetReference>(reference).await?
+                {
                     if matches!(
                         &*chunkable.chunking_type().await?,
                         Some(
@@ -111,5 +115,5 @@ async fn chunkable_assets_set(root: AssetVc) -> Result<AssetsSetVc> {
         })
         .await
         .completed()?;
-    Ok(AssetsSetVc::cell(assets.into_inner().into_iter().collect()))
+    Ok(Vc::cell(assets.into_inner().into_iter().collect()))
 }
