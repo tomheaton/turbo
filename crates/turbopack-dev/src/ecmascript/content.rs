@@ -143,7 +143,7 @@ impl GenerateSourceMap for EcmascriptDevChunkContent {
     }
 
     #[turbo_tasks::function]
-    async fn by_section(&self, section: &str) -> Result<OptionSourceMapVc> {
+    async fn by_section(&self, section: String) -> Result<OptionSourceMapVc> {
         // Weirdly, the ContentSource will have already URL decoded the ModuleId, and we
         // can't reparse that via serde.
         if let Ok(id) = ModuleId::parse(section) {

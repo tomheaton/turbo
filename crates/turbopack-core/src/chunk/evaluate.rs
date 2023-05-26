@@ -34,7 +34,7 @@ impl EvaluatableAssetExt for Box<dyn Asset> {
             self,
             Value::new(ReferenceType::Entry(EntryReferenceSubType::Runtime)),
         );
-        let Some(entry) = Vc::try_resolve_downcast::<&dyn EvaluatableAsset>(asset).await? else {
+        let Some(entry) = Vc::try_resolve_downcast::<Box<dyn EvaluatableAsset>>(asset).await? else {
             bail!("{} is not a valid evaluated entry", asset.ident().to_string().await?)
         };
         Ok(entry)

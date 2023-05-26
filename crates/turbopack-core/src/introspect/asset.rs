@@ -18,7 +18,7 @@ pub struct IntrospectableAsset(Vc<Box<dyn Asset>>);
 impl IntrospectableAsset {
     #[turbo_tasks::function]
     pub async fn new(asset: Vc<Box<dyn Asset>>) -> Result<Vc<Box<dyn Introspectable>>> {
-        Ok(Vc::try_resolve_sidecast::<&dyn Introspectable>(asset)
+        Ok(Vc::try_resolve_sidecast::<Box<dyn Introspectable>>(asset)
             .await?
             .unwrap_or_else(|| Vc::upcast(IntrospectableAsset(asset).cell())))
     }
@@ -116,7 +116,7 @@ pub async fn children_from_asset_references(
     for reference in &*references {
         let mut key = key;
         if let Some(chunkable) =
-            Vc::try_resolve_downcast::<&dyn ChunkableAssetReference>(*reference).await?
+            Vc::try_resolve_downcast::<Box<dyn ChunkableAssetReference>>(*reference).await?
         {
             match &*chunkable.chunking_type().await? {
                 None => {}

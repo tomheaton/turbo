@@ -39,7 +39,7 @@ impl Asset for SourceMapAsset {
 
     #[turbo_tasks::function]
     async fn content(&self) -> Result<Vc<AssetContent>> {
-        let Some(generate_source_map) = Vc::try_resolve_sidecast::<&dyn GenerateSourceMap>(self.asset).await? else {
+        let Some(generate_source_map) = Vc::try_resolve_sidecast::<Box<dyn GenerateSourceMap>>(self.asset).await? else {
             bail!("asset does not support generating source maps")
         };
         let sm = if let Some(sm) = &*generate_source_map.generate_source_map().await? {
@@ -82,7 +82,8 @@ impl Introspectable for SourceMapAsset {
     #[turbo_tasks::function]
     async fn children(&self) -> Result<Vc<IntrospectableChildren>> {
         let mut children = IndexSet::new();
-        if let Some(asset) = Vc::try_resolve_sidecast::<&dyn Introspectable>(self.asset).await? {
+        if let Some(asset) = Vc::try_resolve_sidecast::<Box<dyn Introspectable>>(self.asset).await?
+        {
             children.insert((Vc::cell("asset".to_string()), asset));
         }
         Ok(Vc::cell(children))

@@ -104,7 +104,7 @@ pub struct Chunks(Vec<Vc<Box<dyn Chunk>>>);
 impl Chunks {
     /// Creates a new empty [Vc<Chunks>].
     #[turbo_tasks::function]
-    pub fn empty() -> Vc<Chunks> {
+    pub fn empty() -> Vc<Self> {
         Self::cell(vec![])
     }
 }
@@ -239,7 +239,7 @@ impl ValueToString for ChunkGroupReference {
 }
 
 pub struct ChunkContentResult<I> {
-    pub chunk_items: Vec<I>,
+    pub chunk_items: Vec<Vc<I>>,
     pub chunks: Vec<Vc<Box<dyn Chunk>>>,
     pub async_chunk_group_entries: Vec<Vc<Box<dyn Chunk>>>,
     pub external_asset_references: Vec<Vc<Box<dyn AssetReference>>>,
@@ -247,7 +247,7 @@ pub struct ChunkContentResult<I> {
 }
 
 #[async_trait::async_trait]
-pub trait FromChunkableAsset: ChunkItem + Unpin + Debug {
+pub trait FromChunkableAsset: ChunkItem + Debug {
     async fn from_asset(
         context: Vc<Box<dyn ChunkingContext>>,
         asset: Vc<Box<dyn Asset>>,
@@ -264,7 +264,7 @@ pub async fn chunk_content_split<I>(
     entry: Vc<Box<dyn Asset>>,
     additional_entries: Option<Vc<Assets>>,
     availability_info: Value<AvailabilityInfo>,
-) -> Result<ChunkContentResult<I>>
+) -> Result<ChunkContentResult<Vc<I>>>
 where
     I: FromChunkableAsset,
 {
@@ -278,7 +278,7 @@ pub async fn chunk_content<I>(
     entry: Vc<Box<dyn Asset>>,
     additional_entries: Option<Vc<Assets>>,
     availability_info: Value<AvailabilityInfo>,
-) -> Result<Option<ChunkContentResult<I>>>
+) -> Result<Option<ChunkContentResult<Vc<I>>>>
 where
     I: FromChunkableAsset,
 {
@@ -320,7 +320,7 @@ async fn reference_to_graph_nodes<I>(
 where
     I: FromChunkableAsset,
 {
-    let Some(chunkable_asset_reference) = Vc::try_resolve_downcast::<&dyn ChunkableAssetReference>(reference).await? else {
+    let Some(chunkable_asset_reference) = Vc::try_resolve_downcast::<Box<dyn ChunkableAssetReference>>(reference).await? else {
         return Ok(vec![(None, ChunkContentGraphNode::ExternalAssetReference(reference))]);
     };
 
@@ -352,15 +352,16 @@ where
             }
         }
 
-        let chunkable_asset = match Vc::try_resolve_sidecast::<&dyn ChunkableAsset>(asset).await? {
-            Some(chunkable_asset) => chunkable_asset,
-            _ => {
-                return Ok(vec![(
-                    None,
-                    ChunkContentGraphNode::ExternalAssetReference(reference),
-                )]);
-            }
-        };
+        let chunkable_asset =
+            match Vc::try_resolve_sidecast::<Box<dyn ChunkableAsset>>(asset).await? {
+                Some(chunkable_asset) => chunkable_asset,
+                _ => {
+                    return Ok(vec![(
+                        None,
+                        ChunkContentGraphNode::ExternalAssetReference(reference),
+                    )]);
+                }
+            };
 
         match chunking_type {
             ChunkingType::Placed => {
@@ -475,13 +476,14 @@ struct ChunkContentVisit<I> {
 type ChunkItemToGraphNodesEdges<I> = impl Iterator<
     Item = (
         Option<(Vc<Box<dyn Asset>>, ChunkingType)>,
-        ChunkContentGraphNode<I>,
+        ChunkContentGraphNode<Vc<I>>,
     ),
 >;
 
-type ChunkItemToGraphNodesFuture<I> = impl Future<Output = Result<ChunkItemToGraphNodesEdges<I>>>;
+type ChunkItemToGraphNodesFuture<I: FromChunkableAsset> =
+    impl Future<Output = Result<ChunkItemToGraphNodesEdges<I>>>;
 
-impl<I> Visit<ChunkContentGraphNode<Vc<I>>, ()> for ChunkContentVisit<I>
+impl<I> Visit<ChunkContentGraphNode<Vc<I>>, ()> for ChunkContentVisit<Vc<I>>
 where
     I: FromChunkableAsset,
 {
@@ -489,8 +491,8 @@ where
         Option<(Vc<Box<dyn Asset>>, ChunkingType)>,
         ChunkContentGraphNode<Vc<I>>,
     );
-    type EdgesIntoIter = ChunkItemToGraphNodesEdges<Vc<I>>;
-    type EdgesFuture = ChunkItemToGraphNodesFuture<Vc<I>>;
+    type EdgesIntoIter = ChunkItemToGraphNodesEdges<I>;
+    type EdgesFuture = ChunkItemToGraphNodesFuture<I>;
 
     fn visit(
         &mut self,
@@ -522,7 +524,7 @@ where
         VisitControlFlow::Continue(node)
     }
 
-    fn edges(&mut self, node: &ChunkContentGraphNode<Vc<I>>) -> Self::EdgesFuture {
+    fn edges(&mut self, node: &ChunkContentGraphNode<I>) -> Self::EdgesFuture {
         let chunk_item = if let ChunkContentGraphNode::ChunkItem {
             item: chunk_item, ..
         } = node
@@ -539,9 +541,9 @@ where
                 return Ok(vec![].into_iter().flatten());
             };
 
-            Ok(chunk_item
-                .references()
-                .await?
+            let references = chunk_item.references().await?;
+
+            Ok(references
                 .into_iter()
                 .map(|reference| reference_to_graph_nodes::<I>(context, *reference))
                 .try_join()
@@ -566,7 +568,7 @@ async fn chunk_content_internal_parallel<I>(
     additional_entries: Option<Vc<Assets>>,
     availability_info: Value<AvailabilityInfo>,
     split: bool,
-) -> Result<Option<ChunkContentResult<I>>>
+) -> Result<Option<ChunkContentResult<Vc<I>>>>
 where
     I: FromChunkableAsset,
 {

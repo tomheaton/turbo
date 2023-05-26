@@ -29,11 +29,11 @@ pub trait ResolveOrigin {
 // TODO it would be nice if these methods can be moved to the trait to allow
 // overriding it, but currently we explicitly disallow it due to the way
 // transitions work. Maybe transitions should be decorators on ResolveOrigin?
-#[turbo_tasks::value_trait]
+#[async_trait::async_trait]
 pub trait ResolveOriginExt {
     /// Resolve to an asset from that origin. Custom resolve options can be
     /// passed. Otherwise provide `origin.resolve_options()` unmodified.
-    fn resolve_asset(
+    async fn resolve_asset(
         self: Vc<Self>,
         request: Vc<Request>,
         options: Vc<ResolveOptions>,
@@ -47,9 +47,8 @@ pub trait ResolveOriginExt {
     fn with_transition(self: Vc<Self>, transition: String) -> Vc<Self>;
 }
 
-#[turbo_tasks::value_impl]
-impl ResolveOriginExt for &'static dyn ResolveOrigin {
-    #[turbo_tasks::function]
+#[async_trait::async_trait]
+impl ResolveOriginExt for Box<dyn ResolveOrigin> {
     async fn resolve_asset(
         self: Vc<Self>,
         request: Vc<Request>,
@@ -64,13 +63,11 @@ impl ResolveOriginExt for &'static dyn ResolveOrigin {
             .resolve_asset(self.origin_path(), request, options, reference_type))
     }
 
-    #[turbo_tasks::function]
     fn resolve_options(self: Vc<Self>, reference_type: Value<ReferenceType>) -> Vc<ResolveOptions> {
         self.context()
             .resolve_options(self.origin_path(), reference_type)
     }
 
-    #[turbo_tasks::function]
     fn with_transition(self: Vc<Self>, transition: String) -> Vc<Self> {
         Vc::upcast(
             ResolveOriginWithTransition {

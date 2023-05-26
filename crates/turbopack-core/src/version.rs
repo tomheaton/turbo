@@ -37,8 +37,8 @@ pub trait VersionedContent {
 
         // The fast path might not always work since `self` might have been converted
         // from a `ReadRef` or a `ReadRef`, in which case `self.version()` would
-        // return a new `Vc<Box<dyn Version>>`. In this case, we need to compare version
-        // ids.
+        // return a new `Vc<Box<dyn Version>>`. In this case, we need to compare
+        // version ids.
         let from_id = from.id();
         let to_id = to.id();
         let from_id = from_id.await?;
@@ -96,12 +96,6 @@ impl VersionedAssetContent {
 impl From<AssetContent> for Vc<VersionedAssetContent> {
     fn from(asset_content: AssetContent) -> Self {
         VersionedAssetContent::new(asset_content.cell())
-    }
-}
-
-impl From<Vc<AssetContent>> for Vc<VersionedAssetContent> {
-    fn from(asset_content: Vc<AssetContent>) -> Self {
-        VersionedAssetContent::new(asset_content)
     }
 }
 

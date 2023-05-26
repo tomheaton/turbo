@@ -311,12 +311,12 @@ pub trait IssueExt {
 
 impl<T> IssueExt for Vc<T>
 where
-    T: Upcast<&'static dyn Issue>,
+    T: Upcast<Box<dyn Issue>>,
 {
     fn emit(self) {
-        let issue = Vc::upcast::<&dyn Issue>(self);
+        let issue = Vc::upcast::<Box<dyn Issue>>(self);
         emit(issue);
-        emit(Vc::upcast::<&dyn IssueProcessingPath>(
+        emit(Vc::upcast::<Box<dyn IssueProcessingPath>>(
             RootIssueProcessingPath::cell(RootIssueProcessingPath(issue)),
         ))
     }
@@ -624,7 +624,7 @@ where
         {
             let children = source.take_collectibles().await?;
             if !children.is_empty() {
-                emit(Vc::upcast::<&dyn IssueProcessingPath>(
+                emit(Vc::upcast::<Box<dyn IssueProcessingPath>>(
                     ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
                         Some(IssueProcessingPathItem::cell(IssueProcessingPathItem {
                             context: context.into(),
@@ -679,7 +679,7 @@ where
         {
             let children = self.take_collectibles().await?;
             if !children.is_empty() {
-                emit(Vc::upcast::<&dyn IssueProcessingPath>(
+                emit(Vc::upcast::<Box<dyn IssueProcessingPath>>(
                     ItemIssueProcessingPath::cell(ItemIssueProcessingPath(
                         Some(IssueProcessingPathItem::cell(IssueProcessingPathItem {
                             context: context.into(),
