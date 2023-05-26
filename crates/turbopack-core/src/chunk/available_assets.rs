@@ -76,7 +76,7 @@ impl AvailableAssetsVc {
                 return Ok(BoolVc::cell(true));
             }
         }
-        Ok(BoolVc::cell(false))
+        Ok(Vc::cell(false))
     }
 }
 
