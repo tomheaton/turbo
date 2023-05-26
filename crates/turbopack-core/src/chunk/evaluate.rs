@@ -15,7 +15,7 @@ use crate::{
 #[turbo_tasks::value_trait]
 pub trait EvaluatableAsset: Asset + ChunkableAsset {}
 
-#[turbo_tasks::value_trait]
+#[async_trait::async_trait]
 pub trait EvaluatableAssetExt {
     async fn to_evaluatable(
         self: Vc<Self>,
@@ -23,10 +23,9 @@ pub trait EvaluatableAssetExt {
     ) -> Result<Vc<Box<dyn EvaluatableAsset>>>;
 }
 
-#[turbo_tasks::value_impl]
+#[async_trait::async_trait]
 impl EvaluatableAssetExt for Box<dyn Asset> {
-    #[turbo_tasks::function]
-    pub async fn to_evaluatable(
+    async fn to_evaluatable(
         self: Vc<Self>,
         context: Vc<Box<dyn AssetContext>>,
     ) -> Result<Vc<Box<dyn EvaluatableAsset>>> {

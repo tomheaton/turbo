@@ -49,7 +49,7 @@ impl ChunkData {
         };
         let path = path.to_string();
 
-        let Some(output_chunk) = Vc::try_resolve_sidecast::<&dyn OutputChunk>(chunk).await? else {
+        let Some(output_chunk) = Vc::try_resolve_sidecast::<Box<dyn OutputChunk>>(chunk).await? else {
             return Ok(Vc::cell(Some(ChunkData {
                 path,
                 included: Vec::new(),
@@ -91,11 +91,10 @@ impl ChunkData {
                         Ok(output_root.get_path_to(&*chunk_path).map(|path| {
                             (
                                 path.to_owned(),
-                                SingleAssetReference::new(
+                                Vc::upcast(SingleAssetReference::new(
                                     chunk,
                                     module_chunk_reference_description(),
-                                )
-                                .as_asset_reference(),
+                                )),
                             )
                         }))
                     }

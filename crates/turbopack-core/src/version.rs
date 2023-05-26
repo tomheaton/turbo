@@ -105,12 +105,6 @@ impl From<AssetContent> for Vc<Box<dyn VersionedContent>> {
     }
 }
 
-impl From<Vc<AssetContent>> for Vc<Box<dyn VersionedContent>> {
-    fn from(asset_content: Vc<AssetContent>) -> Self {
-        Vc::upcast(VersionedAssetContent::new(asset_content))
-    }
-}
-
 /// Describes the current version of an object, and how to update them from an
 /// earlier version.
 #[turbo_tasks::value_trait]

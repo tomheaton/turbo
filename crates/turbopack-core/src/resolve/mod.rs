@@ -19,15 +19,19 @@ use self::{
         ResolveIntoPackage, ResolveModules, ResolveModulesOptions, ResolveOptions,
     },
     parse::Request,
-    pattern::QueryMap,
+    pattern::{Pattern, QueryMap},
     remap::{ExportsField, ImportsField},
 };
 use crate::{
     asset::{Asset, AssetOption, Assets},
-    issue::resolve::ResolvingIssue,
+    issue::{resolve::ResolvingIssue, IssueExt},
     package_json::{read_package_json, PackageJsonIssue},
     reference::AssetReference,
     reference_type::ReferenceType,
+    resolve::{
+        pattern::{read_matches, PatternMatch},
+        plugin::ResolvePlugin,
+    },
     source_asset::SourceAsset,
 };
 
@@ -44,7 +48,6 @@ pub use alias_map::{
     AliasMap, AliasMapIntoIter, AliasMapLookupIterator, AliasMatch, AliasPattern, AliasTemplate,
 };
 pub use remap::{ResolveAliasMap, SubpathValue};
-use turbo_tasks::Vc;
 
 use crate::issue::{IssueSeverity, OptionIssueSource};
 
@@ -404,12 +407,12 @@ async fn exports_field(package_json_path: Vc<FileSystemPath>) -> Result<Vc<Expor
     match exports.try_into() {
         Ok(exports) => Ok(ExportsFieldResult::Some(exports).cell()),
         Err(err) => {
-            let issue: Vc<PackageJsonIssue> = PackageJsonIssue {
+            PackageJsonIssue {
                 path: package_json_path,
                 error_message: err.to_string(),
             }
-            .into();
-            issue.as_issue().emit();
+            .cell()
+            .emit();
             Ok(ExportsFieldResult::None.cell())
         }
     }
@@ -445,12 +448,12 @@ async fn imports_field(context: Vc<FileSystemPath>) -> Result<Vc<ImportsFieldRes
     match imports.try_into() {
         Ok(imports) => Ok(ImportsFieldResult::Some(imports, *package_json_path).cell()),
         Err(err) => {
-            let issue: Vc<PackageJsonIssue> = PackageJsonIssue {
+            PackageJsonIssue {
                 path: *package_json_path,
                 error_message: err.to_string(),
             }
-            .into();
-            issue.as_issue().emit();
+            .cell()
+            .emit();
             Ok(ImportsFieldResult::None.cell())
         }
     }
@@ -916,13 +919,13 @@ async fn resolve_into_folder(
     package_path: Vc<FileSystemPath>,
     options: Vc<ResolveOptions>,
 ) -> Result<Vc<ResolveResult>> {
-    let package_json_path = package_path.join("package.json");
+    let package_json_path = package_path.join("package.json".to_string());
     let options_value = options.await?;
     for resolve_into_package in options_value.into_package.iter() {
         match resolve_into_package {
             ResolveIntoPackage::Default(req) => {
                 let str = "./".to_string()
-                    + &*normalize_path(req).ok_or_else(|| {
+                    + &*normalize_path(&req).ok_or_else(|| {
                         anyhow!(
                             "ResolveIntoPackage::Default can't be used with a request that \
                              escapes the current directory"
@@ -1058,7 +1061,7 @@ async fn resolve_module_request(
                         conditions,
                         unspecified_conditions,
                     } => {
-                        let package_json_path = package_path.join("package.json");
+                        let package_json_path = package_path.join("package.json".to_string());
                         if let ExportsFieldResult::Some(exports_field) =
                             &*exports_field(package_json_path).await?
                         {
@@ -1325,7 +1328,7 @@ async fn resolve_package_internal_with_imports_field(
     };
     // https://github.com/nodejs/node/blob/1b177932/lib/internal/modules/esm/resolve.js#L615-L619
     if specifier == "#" || specifier.starts_with("#/") || specifier.ends_with('/') {
-        let issue: Vc<ResolvingIssue> = ResolvingIssue {
+        ResolvingIssue {
             severity: IssueSeverity::Error.cell(),
             context,
             request_type: format!("package imports request: `{specifier}`"),
@@ -1334,8 +1337,8 @@ async fn resolve_package_internal_with_imports_field(
             error_message: None,
             source: OptionIssueSource::none(),
         }
-        .into();
-        issue.as_issue().emit();
+        .cell()
+        .emit();
         return Ok(ResolveResult::unresolveable().into());
     }
 

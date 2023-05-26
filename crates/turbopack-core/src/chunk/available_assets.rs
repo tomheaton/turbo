@@ -165,7 +165,7 @@ async fn chunkable_assets_set(root: Vc<Box<dyn Asset>>) -> Result<Vc<AssetsSet>>
             let mut results = Vec::new();
             for reference in asset.references().await?.iter() {
                 if let Some(chunkable) =
-                    Vc::try_resolve_downcast::<Box<dyn ChunkableAssetReference>>(reference).await?
+                    Vc::try_resolve_downcast::<Box<dyn ChunkableAssetReference>>(*reference).await?
                 {
                     if matches!(
                         &*chunkable.chunking_type().await?,

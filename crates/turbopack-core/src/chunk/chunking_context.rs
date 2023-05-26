@@ -39,7 +39,7 @@ pub trait ChunkingContext {
 
     fn asset_path(
         self: Vc<Self>,
-        content_hash: &str,
+        content_hash: String,
         original_asset_ident: Vc<AssetIdent>,
     ) -> Vc<FileSystemPath>;
 

@@ -105,7 +105,7 @@ impl Chunks {
     /// Creates a new empty [Vc<Chunks>].
     #[turbo_tasks::function]
     pub fn empty() -> Vc<Self> {
-        Self::cell(vec![])
+        Vc::cell(vec![])
     }
 }
 
@@ -239,7 +239,7 @@ impl ValueToString for ChunkGroupReference {
 }
 
 pub struct ChunkContentResult<I> {
-    pub chunk_items: Vec<Vc<I>>,
+    pub chunk_items: Vec<I>,
     pub chunks: Vec<Vc<Box<dyn Chunk>>>,
     pub async_chunk_group_entries: Vec<Vc<Box<dyn Chunk>>>,
     pub external_asset_references: Vec<Vc<Box<dyn AssetReference>>>,
@@ -524,7 +524,7 @@ where
         VisitControlFlow::Continue(node)
     }
 
-    fn edges(&mut self, node: &ChunkContentGraphNode<I>) -> Self::EdgesFuture {
+    fn edges(&mut self, node: &ChunkContentGraphNode<Vc<I>>) -> Self::EdgesFuture {
         let chunk_item = if let ChunkContentGraphNode::ChunkItem {
             item: chunk_item, ..
         } = node
@@ -553,7 +553,7 @@ where
         }
     }
 
-    fn span(&mut self, node: &ChunkContentGraphNode<I>) -> Span {
+    fn span(&mut self, node: &ChunkContentGraphNode<Vc<I>>) -> Span {
         if let ChunkContentGraphNode::ChunkItem { ident, .. } = node {
             info_span!("module", name = display(ident))
         } else {
